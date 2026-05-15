@@ -1,12 +1,13 @@
 import reactLogo from "@/assets/react.svg";
 import { useState } from "react";
 import wxtLogo from "/wxt.svg";
+import "./style.css";
 
 function App() {
   const [count, setCount] = useState(0);
 
   return (
-    <div className="min-h-screen bg-[#242424] text-white flex flex-col items-center justify-center p-8 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen w-2xs bg-slate-800 text-white flex flex-col items-center justify-center p-8 font-sans selection:bg-indigo-500/30">
       <div className="flex items-center justify-center gap-12 mb-12">
         <a
           href="https://wxt.dev"
@@ -44,7 +45,7 @@ function App() {
           className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all rounded-xl font-bold text-lg shadow-lg shadow-indigo-500/20"
           onClick={() => setCount((count) => count + 1)}
         >
-          Count is <span className="inline-block min-w-[1.5rem]">{count}</span>
+          Count is <span className="inline-block min-w-6">{count}</span>
         </button>
 
         <p className="text-gray-400 text-center leading-relaxed">
