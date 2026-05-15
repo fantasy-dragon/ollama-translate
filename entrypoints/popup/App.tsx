@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { type Settings, getSettings, setSettings } from "../../utils/storage";
+import { getTranslation } from "../../utils/i18n";
 import "./style.css";
 
 function App() {
@@ -7,6 +8,10 @@ function App() {
   const [models, setModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const t = useMemo(() => {
+    return getTranslation(settings?.language || "zh");
+  }, [settings?.language]);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -89,18 +94,29 @@ function App() {
                 <path d="m22 22-5-10-5 10" />
                 <path d="M14 18h6" />
               </svg>
-              Ollama Translate
+              {t.title}
             </h1>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary border border-border">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                Online
-              </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  handleUpdate({
+                    language: settings.language === "zh" ? "en" : "zh",
+                  })
+                }
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-border bg-secondary hover:bg-accent transition-colors"
+              >
+                {settings.language === "zh" ? "EN" : "中文"}
+              </button>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary border border-border">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                  {t.statusOnline}
+                </span>
+              </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Modern, minimalist translation powered by AI.
-          </p>
+          <p className="text-xs text-muted-foreground">{t.subtitle}</p>
         </div>
 
         <div className="h-[1px] bg-border mx-1" />
@@ -111,7 +127,7 @@ function App() {
           <div className="bg-card border border-border rounded-lg p-3.5 flex flex-col justify-between items-start gap-3 hover:bg-accent/50 transition-colors">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Auto Mode
+                {t.autoMode}
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -130,7 +146,7 @@ function App() {
           {/* AI Model Card */}
           <div className="bg-card border border-border rounded-lg p-3.5 flex flex-col justify-between gap-2 hover:bg-accent/50 transition-colors">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              AI Model
+              {t.aiModel}
             </span>
             <div className="relative">
               <select
@@ -139,7 +155,7 @@ function App() {
                 onChange={(e) => handleUpdate({ model: e.target.value })}
                 className="w-full appearance-none bg-transparent border-none p-0 text-sm font-medium text-foreground focus:outline-none focus:ring-0 cursor-pointer truncate pr-5"
               >
-                <option value="">Select...</option>
+                <option value="">{t.selectModel}</option>
                 {models.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -178,7 +194,7 @@ function App() {
               htmlFor="target-lang"
               className="text-xs font-semibold text-muted-foreground px-1 uppercase tracking-wider"
             >
-              Target Language
+              {t.targetLanguage}
             </label>
             <div className="bg-card border border-border rounded-lg flex items-center px-3 focus-within:ring-1 focus-within:ring-ring transition-all">
               <input
@@ -189,7 +205,7 @@ function App() {
                   handleUpdate({ targetLanguage: e.target.value })
                 }
                 className="w-full bg-transparent border-none py-2.5 text-sm font-medium text-foreground focus:outline-none placeholder:text-muted-foreground/50"
-                placeholder="e.g. Chinese"
+                placeholder={t.targetLanguagePlaceholder}
                 spellCheck={false}
               />
             </div>
@@ -201,7 +217,7 @@ function App() {
               htmlFor="ollama-url"
               className="text-xs font-semibold text-muted-foreground px-1 uppercase tracking-wider"
             >
-              Service Endpoint
+              {t.serviceEndpoint}
             </label>
             <div className="bg-card border border-border rounded-lg flex items-center px-3 focus-within:ring-1 focus-within:ring-ring transition-all">
               <input
@@ -210,7 +226,7 @@ function App() {
                 value={settings.ollamaUrl}
                 onChange={(e) => handleUpdate({ ollamaUrl: e.target.value })}
                 className="w-full bg-transparent border-none py-2.5 text-sm font-medium text-foreground focus:outline-none placeholder:text-muted-foreground/50 truncate"
-                placeholder="http://localhost:11434"
+                placeholder={t.serviceEndpointPlaceholder}
                 spellCheck={false}
               />
             </div>
@@ -238,7 +254,7 @@ function App() {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <p className="text-[11px] text-destructive-foreground font-medium leading-tight">
-              {fetchError || "No models found. Check Ollama."}
+              {fetchError || t.noModelsFound}
             </p>
           </div>
         )}
@@ -267,7 +283,7 @@ function App() {
               <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
               <path d="M21 3v5h-5" />
             </svg>
-            {loadingModels ? "Syncing..." : "Sync Status"}
+            {loadingModels ? t.syncing : t.syncStatus}
           </button>
         </div>
       </div>

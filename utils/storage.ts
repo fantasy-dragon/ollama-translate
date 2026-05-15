@@ -5,6 +5,7 @@ export interface Settings {
   autoTranslate: boolean;
   minTextLength: number;
   batchSize: number;
+  language: "en" | "zh";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -14,6 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoTranslate: true,
   minTextLength: 20,
   batchSize: 1,
+  language: "zh",
 };
 
 export async function getSettings(): Promise<Settings> {
