@@ -4,8 +4,8 @@ export const translations = {
     subtitle: "Modern, minimalist translation powered by AI.",
     statusOnline: "Online",
     statusTranslating: "Translating",
-    autoMode: "Auto-Translate Page",
-    autoModeTooltip: "Automatically translate whole page after loading",
+    autoMode: "Global Auto-translate",
+    autoModeTooltip: "Enable auto-translate by default for all sites",
     aiModel: "AI Model",
     selectModel: "Select...",
     targetLanguage: "Target Language",
@@ -18,21 +18,21 @@ export const translations = {
     serviceEndpoint: "Service Endpoint",
     serviceEndpointPlaceholder: "http://localhost:11434",
     advancedSettings: "Advanced Settings",
-    saveSettings: "Apply Settings",
     syncStatus: "Sync Status",
     syncing: "Syncing...",
     noModelsFound: "No models found. Check Ollama.",
     language: "Language",
     zh: "Chinese",
     en: "English",
+    enableOnSite: "Current Site Auto-translate",
   },
   zh: {
     title: "Ollama 翻译",
     subtitle: "基于 AI 的现代极简翻译工具。",
     statusOnline: "在线",
     statusTranslating: "翻译中",
-    autoMode: "全页自动翻译",
-    autoModeTooltip: "网页加载后自动翻译整页内容",
+    autoMode: "全局自动翻译 (所有网站)",
+    autoModeTooltip: "新网站默认开启自动翻译",
     aiModel: "AI 模型",
     selectModel: "选择模型...",
     targetLanguage: "目标语言",
@@ -45,13 +45,13 @@ export const translations = {
     serviceEndpoint: "服务地址",
     serviceEndpointPlaceholder: "http://localhost:11434",
     advancedSettings: "高级设置",
-    saveSettings: "保存设置",
     syncStatus: "同步状态",
     syncing: "同步中...",
     noModelsFound: "未找到模型，请检查 Ollama 是否启动。",
     language: "界面语言",
     zh: "中文",
     en: "英文",
+    enableOnSite: "此网站自动翻译",
   },
 } as const;
 
@@ -59,5 +59,5 @@ export type Language = keyof typeof translations;
 export type TranslationKeys = keyof (typeof translations)["en"];
 
 export const getTranslation = (lang: Language) => {
-  return translations[lang] || translations.en;
+  return translations[lang] || translations.zh;
 };

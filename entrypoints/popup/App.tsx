@@ -19,10 +19,11 @@ function App() {
   const [langSearch, setLangSearch] = useState("");
   const [isLangFocus, setIsLangFocus] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [currentHostname, setCurrentHostname] = useState("");
 
-  const t = useMemo(() => {
-    return getTranslation(settings?.language || "zh");
-  }, [settings?.language]);
+    const t = useMemo(() => {
+    return getTranslation("zh");
+  }, []);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -49,6 +50,19 @@ function App() {
       }
     };
     browser.runtime.onMessage.addListener(listener);
+
+    // Get current tab hostname
+    browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+      if (tab?.url) {
+        try {
+          const url = new URL(tab.url);
+          setCurrentHostname(url.hostname.toLowerCase());
+        } catch (e) {
+          console.error("Invalid URL", e);
+        }
+      }
+    });
+
     return () => browser.runtime.onMessage.removeListener(listener);
   }, []);
 
@@ -85,6 +99,25 @@ function App() {
     l.toLowerCase().includes(langSearch.toLowerCase())
   );
 
+  const isCurrentSiteEnabled = settings ? settings.enabledDomains.some(d => 
+    currentHostname === d || currentHostname.endsWith(`.${d}`)
+  ) : false;
+
+  const toggleCurrentSite = () => {
+    if (!settings || !currentHostname) return;
+    if (isCurrentSiteEnabled) {
+      // Disable: Remove from enabled
+      handleUpdate({
+        enabledDomains: settings.enabledDomains.filter(d => 
+          !(currentHostname === d || currentHostname.endsWith(`.${d}`))
+        )
+      });
+    } else {
+      // Enable: Add to enabled
+      handleUpdate({ enabledDomains: [...settings.enabledDomains, currentHostname] });
+    }
+  };
+
   if (!settings) {
     return (
       <div className="w-[320px] h-[400px] flex items-center justify-center bg-background">
@@ -120,47 +153,44 @@ function App() {
             <RefreshCw className="w-4 h-4 opacity-60" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleUpdate({ language: settings.language === "zh" ? "en" : "zh" })}
-            className="p-1.5 hover:bg-secondary rounded-md transition-colors text-[10px] font-bold opacity-60 hover:opacity-100"
-            title={t.language}
-          >
-            {settings.language === "zh" ? "EN" : "中"}
-          </button>
         </div>
       </header>
 
       {/* ── Main Controls Card ── */}
       <div className="bg-card border border-border rounded-xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.1)] space-y-4">
-        {/* Auto Translate Switch */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <label htmlFor="auto-translate-toggle" className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {t.autoMode}
-            </label>
-            <p className="text-[10px] text-muted-foreground">Automatically translate pages</p>
-          </div>
-          <button
-            id="auto-translate-toggle"
-            type="button"
-            onClick={() => handleUpdate({ autoTranslate: !settings.autoTranslate })}
-            role="switch"
-            aria-checked={settings.autoTranslate}
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
-              settings.autoTranslate ? "bg-primary" : "bg-muted"
-            }`}
-          >
-            <span
-              className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                settings.autoTranslate ? "translate-x-4" : "translate-x-0"
+        {/* Auto-Translate Functionality (Merged UI) */}
+        <div className="space-y-4">
+          {/* 1. Current Site Switch */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <label htmlFor="site-translate-toggle" className="text-xs font-semibold leading-none cursor-pointer">
+                {t.enableOnSite}
+              </label>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{currentHostname || "..."}</p>
+            </div>
+            <button
+              id="site-translate-toggle"
+              type="button"
+              onClick={toggleCurrentSite}
+              role="switch"
+              aria-checked={isCurrentSiteEnabled}
+              disabled={!currentHostname}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                isCurrentSiteEnabled ? "bg-primary" : "bg-muted"
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                  isCurrentSiteEnabled ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
         </div>
 
         {/* Translation Style Segmented Control */}
-        <div className="space-y-2">
+        <div className="space-y-2 pt-2 border-t border-border/50">
           <span className="text-xs font-medium text-muted-foreground">{t.translationStyle}</span>
           <div className="grid grid-cols-3 gap-1 p-1 bg-muted rounded-lg">
             {(["academic", "casual", "format"] as const).map((style) => (
@@ -265,7 +295,7 @@ function App() {
         </div>
       </div>
 
-      {/* ── Advanced Settings (Accordion) ── */}
+      {/* ── Advanced Settings ── */}
       <div className="space-y-2">
         <button
           type="button"
@@ -297,13 +327,6 @@ function App() {
            <span className="text-[10px] text-muted-foreground">Latency</span>
            <span className="text-xs font-semibold">{latency ? `${latency}ms` : "--"}</span>
          </div>
-         <button
-          type="button"
-          onClick={() => window.close()}
-          className="flex-1 h-9 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all"
-        >
-          {t.saveSettings}
-        </button>
       </footer>
 
       {/* ── Error Banner ── */}

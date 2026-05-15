@@ -7,17 +7,19 @@ export interface Settings {
   batchSize: number;
   language: "en" | "zh";
   translationStyle: "academic" | "casual" | "format";
+  enabledDomains: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   ollamaUrl: "http://127.0.0.1:11434",
   model: "qwen2.5:3b",
   targetLanguage: "中文",
-  autoTranslate: true,
+  autoTranslate: false,
   minTextLength: 20,
   batchSize: 1,
   language: "zh",
   translationStyle: "format",
+  enabledDomains: [],
 };
 
 export async function getSettings(): Promise<Settings> {

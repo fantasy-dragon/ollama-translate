@@ -1,46 +1,98 @@
 import "@/assets/content.css";
-import { getSettings } from "../utils/storage";
+import { getSettings, type Settings } from "../utils/storage";
 
 export default defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "manifest",
   async main() {
-    const settings = await getSettings();
-    if (!settings.autoTranslate) return;
+    let observer: IntersectionObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
+    let mutationTimeout: ReturnType<typeof setTimeout>;
 
+    const hostname = window.location.hostname.toLowerCase();
 
+    const isEnabled = (settings: Settings) => {
+      return settings.enabledDomains.some(
+        (domain: string) =>
+          hostname === domain || hostname.endsWith(`.${domain}`),
+      );
+    };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const toTranslate: HTMLElement[] = [];
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const el = entry.target as HTMLElement;
-            if (shouldTranslate(el) && !isTranslated(el)) {
-              toTranslate.push(el);
-              observer.unobserve(el); // 触发一次后停止观察
+    const start = () => {
+      if (observer) return;
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          const toTranslate: HTMLElement[] = [];
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const el = entry.target as HTMLElement;
+              if (shouldTranslate(el) && !isTranslated(el)) {
+                toTranslate.push(el);
+                observer?.unobserve(el);
+              }
             }
           }
-        }
-        if (toTranslate.length > 0) {
-          translateElements(toTranslate);
-        }
-      },
-      { threshold: 0.1 },
-    );
+          if (toTranslate.length > 0) {
+            translateElements(toTranslate);
+          }
+        },
+        { threshold: 0.1 },
+      );
 
-    // 智能识别正文区域并开始观察
-    startObserving(observer);
+      startObserving(observer);
 
-    // 处理动态加载的内容 (防抖处理以提升性能)
-    let mutationTimeout: ReturnType<typeof setTimeout>;
-    const mutationObserver = new MutationObserver(() => {
-      clearTimeout(mutationTimeout);
-      mutationTimeout = setTimeout(() => {
-        startObserving(observer);
-      }, 500);
+      mutationObserver = new MutationObserver(() => {
+        clearTimeout(mutationTimeout);
+        mutationTimeout = setTimeout(() => {
+          if (observer) startObserving(observer);
+        }, 500);
+      });
+      mutationObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+
+      // Show existing translations if any
+      for (const el of document.querySelectorAll(".ollama-translation-wrap")) {
+        (el as HTMLElement).style.display = "block";
+      }
+    };
+
+    const stop = () => {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+        mutationObserver = null;
+      }
+      // Hide existing translations
+      for (const el of document.querySelectorAll(".ollama-translation-wrap")) {
+        (el as HTMLElement).style.display = "none";
+      }
+    };
+
+    const checkAndRun = async () => {
+      const settings = await getSettings();
+      const shouldRun = isEnabled(settings);
+      if (shouldRun) {
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    // Initial run
+    await checkAndRun();
+
+    // Listen for changes
+    browser.storage.onChanged.addListener((changes) => {
+      if (changes.settings) {
+        checkAndRun();
+      }
     });
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
   },
 });
 
@@ -116,7 +168,6 @@ async function translateElements(elements: HTMLElement[]) {
       }
     }
   } catch (error) {
-
     for (const el of elements) {
       el.classList.remove("ollama-translating");
     }
