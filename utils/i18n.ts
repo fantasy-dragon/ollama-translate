@@ -3,13 +3,22 @@ export const translations = {
     title: "Ollama Translate",
     subtitle: "Modern, minimalist translation powered by AI.",
     statusOnline: "Online",
-    autoMode: "Auto Mode",
+    statusTranslating: "Translating",
+    autoMode: "Auto-Translate Page",
+    autoModeTooltip: "Automatically translate whole page after loading",
     aiModel: "AI Model",
     selectModel: "Select...",
     targetLanguage: "Target Language",
-    targetLanguagePlaceholder: "e.g. Chinese",
+    targetLanguagePlaceholder: "Search language...",
+    fromAuto: "From: Auto-Detect",
+    translationStyle: "Style",
+    styleAcademic: "Academic",
+    styleCasual: "Casual",
+    styleFormat: "Keep HTML",
     serviceEndpoint: "Service Endpoint",
     serviceEndpointPlaceholder: "http://localhost:11434",
+    advancedSettings: "Advanced Settings",
+    saveSettings: "Apply Settings",
     syncStatus: "Sync Status",
     syncing: "Syncing...",
     noModelsFound: "No models found. Check Ollama.",
@@ -21,13 +30,22 @@ export const translations = {
     title: "Ollama 翻译",
     subtitle: "基于 AI 的现代极简翻译工具。",
     statusOnline: "在线",
-    autoMode: "自动模式",
+    statusTranslating: "翻译中",
+    autoMode: "全页自动翻译",
+    autoModeTooltip: "网页加载后自动翻译整页内容",
     aiModel: "AI 模型",
     selectModel: "选择模型...",
     targetLanguage: "目标语言",
-    targetLanguagePlaceholder: "例如：中文",
+    targetLanguagePlaceholder: "搜索语言...",
+    fromAuto: "源语言: 自动检测",
+    translationStyle: "翻译风格",
+    styleAcademic: "学术",
+    styleCasual: "口语",
+    styleFormat: "保留格式",
     serviceEndpoint: "服务地址",
     serviceEndpointPlaceholder: "http://localhost:11434",
+    advancedSettings: "高级设置",
+    saveSettings: "保存设置",
     syncStatus: "同步状态",
     syncing: "同步中...",
     noModelsFound: "未找到模型，请检查 Ollama 是否启动。",
@@ -38,7 +56,7 @@ export const translations = {
 } as const;
 
 export type Language = keyof typeof translations;
-export type TranslationKeys = keyof typeof translations["en"];
+export type TranslationKeys = keyof (typeof translations)["en"];
 
 export const getTranslation = (lang: Language) => {
   return translations[lang] || translations.en;

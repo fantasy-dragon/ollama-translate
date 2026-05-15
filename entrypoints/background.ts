@@ -46,12 +46,23 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
     return { translations: texts.map(() => "翻译失败: 未选择模型") };
   }
 
+  const startTime = Date.now();
+  // Notify popup that translation has started
+  browser.runtime.sendMessage({ type: "TRANSLATION_STATUS", status: "translating" }).catch(() => {});
+
   const translations: string[] = [];
   const baseUrl = settings.ollamaUrl.replace(/\/$/, "");
 
-  // 逐条翻译，不再合并请求
+  const stylePrompts = {
+    academic: "Use an academic, formal tone. Prefer precise terminology and complex sentence structures where appropriate.",
+    casual: "Use a casual, conversational tone. Make it sound natural and easy to understand.",
+    format: "Maintain the original formatting. If the text contains HTML tags or specific symbols, keep them intact.",
+  };
+
   for (const text of texts) {
+    const stylePrompt = stylePrompts[settings.translationStyle] || stylePrompts.format;
     const prompt = `You are a professional translator. Translate the following text into ${settings.targetLanguage}.
+${stylePrompt}
 CRITICAL REQUIREMENTS:
 - If the target language is "中文" or "Chinese", you MUST use Simplified Chinese (简体中文). Do NOT use Traditional Chinese (繁体中文).
 - Return ONLY the final translated text. No explanations, no quotes, no conversational filler.
@@ -64,7 +75,6 @@ Text: ${text}`;
           model: settings.model,
           prompt: prompt,
           stream: false,
-          // 彻底去掉 format: "json"，让模型直接返回纯文本
         }),
       });
 
@@ -78,15 +88,21 @@ Text: ${text}`;
       }
 
       const data = await response.json();
-      // 直接使用返回的 response 字符串，不再尝试解析 JSON
       translations.push(data.response.trim());
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-
       translations.push(`翻译失败 (网络或服务错误: ${errorMessage})`);
     }
   }
+
+  // Notify popup that translation has finished with latency
+  const duration = Date.now() - startTime;
+  browser.runtime.sendMessage({ 
+    type: "TRANSLATION_STATUS", 
+    status: "idle",
+    latency: duration
+  }).catch(() => {});
 
   return { translations };
 }

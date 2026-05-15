@@ -6,6 +6,7 @@ export interface Settings {
   minTextLength: number;
   batchSize: number;
   language: "en" | "zh";
+  translationStyle: "academic" | "casual" | "format";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
   minTextLength: 20,
   batchSize: 1,
   language: "zh",
+  translationStyle: "format",
 };
 
 export async function getSettings(): Promise<Settings> {

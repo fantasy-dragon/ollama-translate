@@ -41,3 +41,12 @@ select option {
   background-color: #1c1c1e;
   color: white;
 }
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+.animate-breathe {
+  animation: breathe 2s ease-in-out infinite;
+}
