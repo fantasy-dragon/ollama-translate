@@ -10,10 +10,12 @@ function App() {
 
   useEffect(() => {
     getSettings().then((s) => {
-      setLocalSettings(s);
-      // 如果存储中还是 localhost，静默更新为 127.0.0.1 提高兼容性
       if (s.ollamaUrl === "http://localhost:11434") {
-        handleUpdate({ ollamaUrl: "http://127.0.0.1:11434" });
+        const updated = { ...s, ollamaUrl: "http://127.0.0.1:11434" };
+        setLocalSettings(updated);
+        setSettings({ ollamaUrl: "http://127.0.0.1:11434" });
+      } else {
+        setLocalSettings(s);
       }
     });
   }, []);
@@ -25,7 +27,7 @@ function App() {
   }, [settings?.ollamaUrl]);
 
   const fetchModels = async () => {
-    console.log("fetchModels called in popup");
+
     setLoadingModels(true);
     setFetchError(null);
     try {
@@ -39,7 +41,7 @@ function App() {
         setModels(response.models);
       }
     } catch (error: unknown) {
-      console.error("Popup: Failed to fetch models", error);
+
       const message = error instanceof Error ? error.message : String(error);
       setFetchError(message);
     } finally {
@@ -54,180 +56,308 @@ function App() {
     await setSettings(update);
   };
 
-  if (!settings) return <div className="p-8 text-white">Loading...</div>;
+  if (!settings) {
+    return (
+      <div className="w-[380px] h-[400px] bg-[#1C1C1E] flex flex-col items-center justify-center rounded-[32px]">
+        <div className="w-8 h-8 border-4 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
+      </div>
+    );
+  }
 
   return (
-    <div className="w-[380px] bg-slate-900 text-slate-100 font-sans p-6 shadow-2xl border border-slate-800 rounded-lg">
-      <header className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+    <div className="w-[380px] bg-[#121214] p-4 font-sans text-zinc-100 selection:bg-cyan-500/30 overflow-hidden">
+      <div className="grid grid-cols-2 gap-3 relative">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+        {/* Bento Box 1: Logo & Title (1x1) */}
+        <div className="col-span-1 h-[120px] bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/[0.05] rounded-[24px] p-5 flex flex-col justify-between relative overflow-hidden group shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-cyan-400/20 transition-all duration-500" />
+          <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-[14px] flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]">
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
               aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-zinc-950"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-              />
+              <path d="m5 8 6 6" />
+              <path d="m4 14 6-6 2-3" />
+              <path d="M2 5h12" />
+              <path d="M7 2h1" />
+              <path d="m22 22-5-10-5 10" />
+              <path d="M14 18h6" />
             </svg>
           </div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-              Ollama 翻译
+          <div className="z-10">
+            <h1 className="text-lg font-bold tracking-tight text-white leading-none">
+              Ollama
             </h1>
-            <p className="text-xs text-slate-500 font-medium tracking-wider uppercase">
-              本地 AI 沉浸式阅读
+            <p className="text-[11px] text-cyan-400 font-semibold mt-1 uppercase tracking-widest">
+              Translate
             </p>
           </div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={settings.autoTranslate}
-            onChange={(e) => handleUpdate({ autoTranslate: e.target.checked })}
-          />
-          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600" />
-        </label>
-      </header>
 
-      <div className="space-y-6">
-        {/* Ollama URL */}
-        <div className="space-y-2">
-          <label htmlFor="ollama-url" className="text-sm font-semibold text-slate-400 ml-1">
-            服务地址
+        {/* Bento Box 2: Auto Translate Toggle (1x1) */}
+        <div className="col-span-1 h-[120px] bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/[0.05] rounded-[24px] p-5 flex flex-col justify-between items-start shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group">
+          <span className="text-[13px] font-semibold text-zinc-400 group-hover:text-zinc-300 transition-colors">
+            Auto Mode
+          </span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={settings.autoTranslate}
+              onChange={(e) =>
+                handleUpdate({ autoTranslate: e.target.checked })
+              }
+            />
+            <div className="w-[52px] h-8 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[20px] after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-zinc-400 peer-checked:after:bg-cyan-400 after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-400/10 peer-checked:border-cyan-400/50 border border-white/5 peer-checked:shadow-[0_0_15px_rgba(34,211,238,0.2)]" />
           </label>
-          <div className="relative">
+        </div>
+
+        {/* Bento Box 3: Target Language (Full Width) */}
+        <div className="col-span-2 bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/[0.05] rounded-[24px] p-4 flex items-center gap-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group transition-colors focus-within:border-cyan-400/30 focus-within:bg-[#1C1C1E]">
+          <div className="w-11 h-11 rounded-[16px] bg-black/40 border border-white/5 flex items-center justify-center shrink-0 group-focus-within:border-cyan-400/30 group-focus-within:text-cyan-400 text-zinc-400 transition-colors">
+            <svg
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 8l6 6" />
+              <path d="M4 14l6-6 2-3" />
+              <path d="M2 5h12" />
+              <path d="M7 2h1" />
+              <path d="M22 22l-5-10-5 10" />
+              <path d="M14 18h6" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <label
+              htmlFor="target-lang"
+              className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block mb-0.5 opacity-80"
+            >
+              Target Lang
+            </label>
+            <input
+              id="target-lang"
+              type="text"
+              value={settings.targetLanguage}
+              onChange={(e) => handleUpdate({ targetLanguage: e.target.value })}
+              className="w-full bg-transparent border-none p-0 text-[15px] font-medium text-white focus:outline-none focus:ring-0 placeholder-zinc-600 truncate"
+              placeholder="e.g. 中文, English"
+              spellCheck={false}
+            />
+          </div>
+        </div>
+
+        {/* Bento Box 4: Service URL (Full Width) */}
+        <div className="col-span-2 bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/[0.05] rounded-[24px] p-4 flex items-center gap-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group transition-colors focus-within:border-cyan-400/30 focus-within:bg-[#1C1C1E]">
+          <div className="w-11 h-11 rounded-[16px] bg-black/40 border border-white/5 flex items-center justify-center shrink-0 group-focus-within:border-cyan-400/30 group-focus-within:text-cyan-400 text-zinc-400 transition-colors">
+            <svg
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect width="16" height="16" x="4" y="4" rx="2" />
+              <rect width="6" height="6" x="9" y="9" rx="1" />
+              <path d="M15 2v2" />
+              <path d="M15 20v2" />
+              <path d="M2 15h2" />
+              <path d="M2 9h2" />
+              <path d="M20 15h2" />
+              <path d="M20 9h2" />
+              <path d="M9 2v2" />
+              <path d="M9 20v2" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <label
+              htmlFor="ollama-url"
+              className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block mb-0.5 opacity-80"
+            >
+              Endpoint URL
+            </label>
             <input
               id="ollama-url"
               type="text"
               value={settings.ollamaUrl}
               onChange={(e) => handleUpdate({ ollamaUrl: e.target.value })}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none placeholder-slate-600"
+              className="w-full bg-transparent border-none p-0 text-[15px] font-medium text-white focus:outline-none focus:ring-0 placeholder-zinc-600 truncate"
               placeholder="http://127.0.0.1:11434"
+              spellCheck={false}
             />
           </div>
         </div>
 
-        {/* Model Selection */}
-        <div className="space-y-2">
-          <label htmlFor="model-select" className="text-sm font-semibold text-slate-400 ml-1">
-            语言模型
-          </label>
-          <div className="relative">
-            <select
-              id="model-select"
-              value={settings.model}
-              onChange={(e) => handleUpdate({ model: e.target.value })}
-              className="w-full appearance-none bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
-            >
-              <option value="">选择模型...</option>
-              {models.map((m) => (
-                <option key={m} value={m}>
-                  {m}
+        {/* Bento Box 5: Model Selection (Full Width) */}
+        <div className="col-span-2 bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/[0.05] rounded-[24px] p-4 flex flex-col justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors focus-within:border-cyan-400/30 focus-within:bg-[#1C1C1E]">
+          <div className="flex items-center gap-4 group">
+            <div className="w-11 h-11 rounded-[16px] bg-black/40 border border-white/5 flex items-center justify-center shrink-0 group-focus-within:border-cyan-400/30 group-focus-within:text-cyan-400 text-zinc-400 transition-colors">
+              <svg
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
+            </div>
+            <div className="flex-1 relative min-w-0">
+              <label
+                htmlFor="model-select"
+                className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block mb-0.5 opacity-80"
+              >
+                AI Model
+              </label>
+              <select
+                id="model-select"
+                value={settings.model}
+                onChange={(e) => handleUpdate({ model: e.target.value })}
+                className="w-full appearance-none bg-transparent border-none p-0 text-[15px] font-medium text-white focus:outline-none focus:ring-0 cursor-pointer truncate"
+              >
+                <option value="" className="bg-zinc-900 text-zinc-100">
+                  Select model...
                 </option>
-              ))}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-              {loadingModels ? (
-                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
+                {models.map((m) => (
+                  <option
+                    key={m}
+                    value={m}
+                    className="bg-zinc-900 text-zinc-100"
+                  >
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-0 top-1/2 pointer-events-none text-zinc-500">
+                {loadingModels ? (
+                  <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              )}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                )}
+              </div>
             </div>
           </div>
+
           {(fetchError || (models.length === 0 && !loadingModels)) && (
-            <div className="mt-2 space-y-2">
-              <p className="text-[10px] text-amber-500 ml-1 flex items-start gap-1">
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl flex gap-3 items-start backdrop-blur-sm">
+              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 mt-0.5 shrink-0"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
                   aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-400"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                <span>
-                  {fetchError ? `连接失败: ${fetchError}` : "未检测到本地模型，请确保 Ollama 已运行并下载了模型"}
-                </span>
-              </p>
-              {fetchError && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2 text-[9px] text-amber-200/80 leading-relaxed">
-                  提示: 如果 Ollama 已运行但仍报错，请尝试设置环境变量 
-                  <code className="bg-slate-800 px-1 rounded text-white mx-1">OLLAMA_ORIGINS="*"</code> 
-                  并重启 Ollama。
-                </div>
-              )}
+              </div>
+              <div className="space-y-1 text-xs py-0.5">
+                <p className="text-red-300 font-semibold tracking-wide">
+                  {fetchError ? "Connection Failed" : "No Models Detected"}
+                </p>
+                <p className="text-red-300/70 leading-relaxed text-[11px]">
+                  {fetchError
+                    ? fetchError
+                    : "Please ensure Ollama is running and models are downloaded."}
+                  {fetchError && (
+                    <span className="block mt-1 opacity-80">
+                      Tip: Set{" "}
+                      <code className="text-red-400 font-mono bg-red-500/10 px-1 rounded">
+                        OLLAMA_ORIGINS="*"
+                      </code>
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Target Language */}
-        <div className="space-y-2">
-          <label htmlFor="target-lang" className="text-sm font-semibold text-slate-400 ml-1">
-            目标语言
-          </label>
-          <input
-            id="target-lang"
-            type="text"
-            value={settings.targetLanguage}
-            onChange={(e) => handleUpdate({ targetLanguage: e.target.value })}
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-            placeholder="例如：中文, English, 日本語"
-          />
-        </div>
-      </div>
-
-      <footer className="mt-8 pt-6 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-500 font-medium">
-        <span>Powered by Ollama</span>
-        <button
-          type="button"
-          onClick={fetchModels}
-          className="hover:text-indigo-400 transition-colors flex items-center gap-1"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-3 w-3 ${loadingModels ? "animate-spin" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
+        {/* Footer */}
+        <div className="col-span-2 mt-1 flex justify-between items-center px-3 text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
+          <span className="flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-40" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,1)]" />
+            </span>
+            System Online
+          </span>
+          <button
+            type="button"
+            onClick={fetchModels}
+            className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors active:scale-95 py-1"
           >
-            <path
+            <svg
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          刷新状态
-        </button>
-      </footer>
+              className={loadingModels ? "animate-spin text-cyan-400" : ""}
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            Sync Status
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

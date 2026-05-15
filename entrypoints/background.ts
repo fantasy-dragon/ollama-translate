@@ -19,10 +19,10 @@ export interface FetchModelsResponse {
 }
 
 export default defineBackground(() => {
-  console.log("Background script initialized");
+
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("Background received message:", message);
+
 
     if (message.type === "TRANSLATE" && message.texts) {
       handleTranslate(message.texts).then(sendResponse);
@@ -30,9 +30,9 @@ export default defineBackground(() => {
     }
 
     if (message.type === "FETCH_MODELS") {
-      console.log("Handling FETCH_MODELS...");
+
       handleFetchModels().then((response) => {
-        console.log("Sending FETCH_MODELS response:", response);
+
         sendResponse(response);
       });
       return true; // 保持通道开放
@@ -45,14 +45,16 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   if (!settings.model) {
     return { translations: texts.map(() => "翻译失败: 未选择模型") };
   }
-  
+
   const translations: string[] = [];
   const baseUrl = settings.ollamaUrl.replace(/\/$/, "");
 
   // 逐条翻译，不再合并请求
   for (const text of texts) {
-    const prompt = `Translate the following text into ${settings.targetLanguage}. 
-Return ONLY the translated text, no explanation, no quotes.
+    const prompt = `You are a professional translator. Translate the following text into ${settings.targetLanguage}.
+CRITICAL REQUIREMENTS:
+- If the target language is "中文" or "Chinese", you MUST use Simplified Chinese (简体中文). Do NOT use Traditional Chinese (繁体中文).
+- Return ONLY the final translated text. No explanations, no quotes, no conversational filler.
 Text: ${text}`;
 
     try {
@@ -79,8 +81,9 @@ Text: ${text}`;
       // 直接使用返回的 response 字符串，不再尝试解析 JSON
       translations.push(data.response.trim());
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Translation fetch failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       translations.push(`翻译失败 (网络或服务错误: ${errorMessage})`);
     }
   }
@@ -93,7 +96,7 @@ async function handleFetchModels(): Promise<FetchModelsResponse> {
     const settings = await getSettings();
     const baseUrl = settings.ollamaUrl.replace(/\/$/, "");
     const response = await fetch(`${baseUrl}/api/tags`);
-    console.log(response, "response");
+
     if (!response.ok) {
       throw new Error(
         `Ollama 响应异常: ${response.status} ${response.statusText}`,
@@ -104,7 +107,7 @@ async function handleFetchModels(): Promise<FetchModelsResponse> {
     return { models };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Failed to fetch models:", error);
+
     return { models: [], error: errorMessage };
   }
 }

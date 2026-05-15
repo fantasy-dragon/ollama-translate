@@ -8,7 +8,7 @@ export default defineContentScript({
     const settings = await getSettings();
     if (!settings.autoTranslate) return;
 
-    console.log("Ollama Translator active");
+
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -116,7 +116,7 @@ async function translateElements(elements: HTMLElement[]) {
       }
     }
   } catch (error) {
-    console.error("Translation message failed:", error);
+
     for (const el of elements) {
       el.classList.remove("ollama-translating");
     }
