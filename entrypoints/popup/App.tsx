@@ -1,11 +1,25 @@
 import { useEffect, useState, useMemo } from "react";
-import { Languages, Settings2, RefreshCw, ChevronDown, Search, AlertCircle } from "lucide-react";
+import {
+  Languages,
+  Settings2,
+  RefreshCw,
+  ChevronDown,
+  Search,
+  AlertCircle,
+} from "lucide-react";
 import { type Settings, getSettings, setSettings } from "../../utils/storage";
 import { getTranslation } from "../../utils/i18n";
 import "./style.css";
 
 const COMMON_LANGUAGES = [
-  "中文", "English", "日本語", "한국어", "Français", "Deutsch", "Español", "Русский",
+  "中文",
+  "English",
+  "日本語",
+  "한국어",
+  "Français",
+  "Deutsch",
+  "Español",
+  "Русский",
 ];
 
 function App() {
@@ -21,7 +35,7 @@ function App() {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [currentHostname, setCurrentHostname] = useState("");
 
-    const t = useMemo(() => {
+  const t = useMemo(() => {
     return getTranslation("zh");
   }, []);
 
@@ -74,7 +88,9 @@ function App() {
     setLoadingModels(true);
     setFetchError(null);
     try {
-      const response = await browser.runtime.sendMessage({ type: "FETCH_MODELS" });
+      const response = await browser.runtime.sendMessage({
+        type: "FETCH_MODELS",
+      });
       if (response?.error) {
         setFetchError(response.error);
         setModels([]);
@@ -96,25 +112,29 @@ function App() {
   };
 
   const filteredLangs = COMMON_LANGUAGES.filter((l) =>
-    l.toLowerCase().includes(langSearch.toLowerCase())
+    l.toLowerCase().includes(langSearch.toLowerCase()),
   );
 
-  const isCurrentSiteEnabled = settings ? settings.enabledDomains.some(d => 
-    currentHostname === d || currentHostname.endsWith(`.${d}`)
-  ) : false;
+  const isCurrentSiteEnabled = settings
+    ? settings.enabledDomains.some(
+        (d) => currentHostname === d || currentHostname.endsWith(`.${d}`),
+      )
+    : false;
 
   const toggleCurrentSite = () => {
     if (!settings || !currentHostname) return;
     if (isCurrentSiteEnabled) {
       // Disable: Remove from enabled
       handleUpdate({
-        enabledDomains: settings.enabledDomains.filter(d => 
-          !(currentHostname === d || currentHostname.endsWith(`.${d}`))
-        )
+        enabledDomains: settings.enabledDomains.filter(
+          (d) => !(currentHostname === d || currentHostname.endsWith(`.${d}`)),
+        ),
       });
     } else {
       // Enable: Add to enabled
-      handleUpdate({ enabledDomains: [...settings.enabledDomains, currentHostname] });
+      handleUpdate({
+        enabledDomains: [...settings.enabledDomains, currentHostname],
+      });
     }
   };
 
@@ -136,15 +156,19 @@ function App() {
           </div>
           <h1 className="text-sm font-semibold tracking-tight">{t.title}</h1>
         </div>
-        
+
         <div className="flex items-center gap-1">
           {/* Status Indicator */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-secondary text-[10px] font-medium border border-border mr-1">
-            <span className={`w-1.5 h-1.5 rounded-full ${isTranslating ? "bg-primary animate-pulse" : "bg-green-500"}`} />
-            <span className="opacity-70">{isTranslating ? t.statusTranslating : t.statusOnline}</span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${isTranslating ? "bg-primary animate-pulse" : "bg-green-500"}`}
+            />
+            <span className="opacity-70">
+              {isTranslating ? t.statusTranslating : t.statusOnline}
+            </span>
           </div>
-          
-          <button 
+
+          <button
             type="button"
             onClick={fetchModels}
             className={`p-1.5 hover:bg-secondary rounded-md transition-colors ${loadingModels ? "animate-spin" : ""}`}
@@ -152,7 +176,6 @@ function App() {
           >
             <RefreshCw className="w-4 h-4 opacity-60" />
           </button>
-
         </div>
       </header>
 
@@ -163,10 +186,15 @@ function App() {
           {/* 1. Current Site Switch */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <label htmlFor="site-translate-toggle" className="text-xs font-semibold leading-none cursor-pointer">
+              <label
+                htmlFor="site-translate-toggle"
+                className="text-xs font-semibold leading-none cursor-pointer"
+              >
                 {t.enableOnSite}
               </label>
-              <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">{currentHostname || "..."}</p>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+                {currentHostname || "..."}
+              </p>
             </div>
             <button
               id="site-translate-toggle"
@@ -186,12 +214,13 @@ function App() {
               />
             </button>
           </div>
-
         </div>
 
         {/* Translation Style Segmented Control */}
         <div className="space-y-2 pt-2 border-t border-border/50">
-          <span className="text-xs font-medium text-muted-foreground">{t.translationStyle}</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            {t.translationStyle}
+          </span>
           <div className="grid grid-cols-3 gap-1 p-1 bg-muted rounded-lg">
             {(["academic", "casual", "format"] as const).map((style) => (
               <button
@@ -199,12 +228,16 @@ function App() {
                 type="button"
                 onClick={() => handleUpdate({ translationStyle: style })}
                 className={`text-[10px] font-medium py-1.5 rounded-md transition-all ${
-                  settings.translationStyle === style 
-                    ? "bg-background text-foreground shadow-sm" 
+                  settings.translationStyle === style
+                    ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {style === "academic" ? t.styleAcademic : style === "casual" ? t.styleCasual : t.styleFormat}
+                {style === "academic"
+                  ? t.styleAcademic
+                  : style === "casual"
+                    ? t.styleCasual
+                    : t.styleFormat}
               </button>
             ))}
           </div>
@@ -216,8 +249,17 @@ function App() {
         {/* Model Selection */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="model-select-button" className="text-xs font-medium text-muted-foreground">{t.aiModel}</label>
-            {settings.model && <span className="text-[9px] font-bold text-green-500 uppercase">Ready</span>}
+            <label
+              htmlFor="model-select-button"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              {t.aiModel}
+            </label>
+            {settings.model && (
+              <span className="text-[9px] font-bold text-green-500 uppercase">
+                Ready
+              </span>
+            )}
           </div>
           <div className="relative">
             <button
@@ -226,10 +268,14 @@ function App() {
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
               className="w-full flex items-center justify-between px-3 py-2 bg-background border border-input rounded-lg text-xs hover:bg-accent transition-colors group"
             >
-              <span className="truncate max-w-[180px]">{settings.model || t.selectModel}</span>
-              <ChevronDown className={`w-4 h-4 opacity-40 transition-transform group-hover:opacity-100 ${isModelDropdownOpen ? "rotate-180" : ""}`} />
+              <span className="truncate max-w-[180px]">
+                {settings.model || t.selectModel}
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 opacity-40 transition-transform group-hover:opacity-100 ${isModelDropdownOpen ? "rotate-180" : ""}`}
+              />
             </button>
-            
+
             {isModelDropdownOpen && (
               <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border rounded-lg shadow-xl z-50 max-h-[160px] overflow-y-auto p-1 animate-in fade-in zoom-in-95 duration-100">
                 {models.length > 0 ? (
@@ -242,14 +288,18 @@ function App() {
                         setIsModelDropdownOpen(false);
                       }}
                       className={`w-full flex items-center px-2 py-1.5 text-xs rounded-md transition-colors ${
-                        settings.model === m ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                        settings.model === m
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-accent/50"
                       }`}
                     >
                       {m}
                     </button>
                   ))
                 ) : (
-                  <div className="p-2 text-xs text-muted-foreground italic text-center">{t.noModelsFound}</div>
+                  <div className="p-2 text-xs text-muted-foreground italic text-center">
+                    {t.noModelsFound}
+                  </div>
                 )}
               </div>
             )}
@@ -258,7 +308,12 @@ function App() {
 
         {/* Target Language */}
         <div className="space-y-2">
-          <label htmlFor="language-search-input" className="text-xs font-medium text-muted-foreground">{t.targetLanguage}</label>
+          <label
+            htmlFor="language-search-input"
+            className="text-xs font-medium text-muted-foreground"
+          >
+            {t.targetLanguage}
+          </label>
           <div className="relative group">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity">
               <Search className="w-3.5 h-3.5" />
@@ -268,7 +323,10 @@ function App() {
               type="text"
               value={isLangFocus ? langSearch : settings.targetLanguage}
               onChange={(e) => setLangSearch(e.target.value)}
-              onFocus={() => { setIsLangFocus(true); setLangSearch(""); }}
+              onFocus={() => {
+                setIsLangFocus(true);
+                setLangSearch("");
+              }}
               onBlur={() => setTimeout(() => setIsLangFocus(false), 200)}
               className="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               placeholder={t.targetLanguagePlaceholder}
@@ -280,14 +338,19 @@ function App() {
                     <button
                       key={l}
                       type="button"
-                      onClick={() => { handleUpdate({ targetLanguage: l }); setIsLangFocus(false); }}
+                      onClick={() => {
+                        handleUpdate({ targetLanguage: l });
+                        setIsLangFocus(false);
+                      }}
                       className="w-full px-2 py-1.5 text-xs rounded-md hover:bg-accent text-left"
                     >
                       {l}
                     </button>
                   ))
                 ) : (
-                  <div className="p-2 text-xs text-muted-foreground text-center">No results</div>
+                  <div className="p-2 text-xs text-muted-foreground text-center">
+                    No results
+                  </div>
                 )}
               </div>
             )}
@@ -302,13 +365,20 @@ function App() {
           onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
           className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors py-1 w-full text-left"
         >
-          <Settings2 className={`w-3.5 h-3.5 transition-transform ${isAdvancedOpen ? "rotate-90" : ""}`} />
+          <Settings2
+            className={`w-3.5 h-3.5 transition-transform ${isAdvancedOpen ? "rotate-90" : ""}`}
+          />
           {t.advancedSettings}
         </button>
-        
+
         {isAdvancedOpen && (
           <div className="p-3 bg-secondary/30 border border-border rounded-lg space-y-2 animate-in slide-in-from-top-2 duration-200">
-            <label htmlFor="service-endpoint" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t.serviceEndpoint}</label>
+            <label
+              htmlFor="service-endpoint"
+              className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              {t.serviceEndpoint}
+            </label>
             <input
               id="service-endpoint"
               type="text"
@@ -323,10 +393,12 @@ function App() {
 
       {/* ── Footer ── */}
       <footer className="pt-2 border-t border-border flex items-center justify-between gap-4">
-         <div className="flex flex-col">
-           <span className="text-[10px] text-muted-foreground">Latency</span>
-           <span className="text-xs font-semibold">{latency ? `${latency}ms` : "--"}</span>
-         </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] text-muted-foreground">Latency</span>
+          <span className="text-xs font-semibold">
+            {latency ? `${latency}ms` : "--"}
+          </span>
+        </div>
       </footer>
 
       {/* ── Error Banner ── */}
@@ -335,7 +407,9 @@ function App() {
           <div className="p-1 bg-destructive/20 rounded text-destructive mt-0.5">
             <AlertCircle className="w-3 h-3" strokeWidth={3} />
           </div>
-          <p className="text-[10px] text-destructive font-medium leading-relaxed">{fetchError}</p>
+          <p className="text-[10px] text-destructive font-medium leading-relaxed">
+            {fetchError}
+          </p>
         </div>
       )}
     </div>

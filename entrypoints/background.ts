@@ -19,20 +19,14 @@ export interface FetchModelsResponse {
 }
 
 export default defineBackground(() => {
-
-
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
-
     if (message.type === "TRANSLATE" && message.texts) {
       handleTranslate(message.texts).then(sendResponse);
       return true; // 保持通道开放以进行异步响应
     }
 
     if (message.type === "FETCH_MODELS") {
-
       handleFetchModels().then((response) => {
-
         sendResponse(response);
       });
       return true; // 保持通道开放
@@ -48,20 +42,26 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
 
   const startTime = Date.now();
   // Notify popup that translation has started
-  browser.runtime.sendMessage({ type: "TRANSLATION_STATUS", status: "translating" }).catch(() => {});
+  browser.runtime
+    .sendMessage({ type: "TRANSLATION_STATUS", status: "translating" })
+    .catch(() => {});
 
   const translations: string[] = [];
   const baseUrl = settings.ollamaUrl.replace(/\/$/, "");
 
   const stylePrompts = {
-    academic: "Use an academic, formal tone. Prefer precise terminology and complex sentence structures where appropriate.",
-    casual: "Use a casual, conversational tone. Make it sound natural and easy to understand.",
-    format: "Maintain the original formatting. If the text contains HTML tags or specific symbols, keep them intact.",
+    academic:
+      "Use an academic, formal tone. Prefer precise terminology and complex sentence structures where appropriate.",
+    casual:
+      "Use a casual, conversational tone. Make it sound natural and easy to understand.",
+    format:
+      "Maintain the original formatting. If the text contains HTML tags or specific symbols, keep them intact.",
   };
 
   for (const text of texts) {
-    const stylePrompt = stylePrompts[settings.translationStyle] || stylePrompts.format;
-    const prompt = `You are a professional translator. Translate the following text into ${settings.targetLanguage}.
+    const stylePrompt =
+      stylePrompts[settings.translationStyle] || stylePrompts.format;
+    const prompt = `You are a professional translator. Translate the following text into ${settings.targetLanguage} .
 ${stylePrompt}
 CRITICAL REQUIREMENTS:
 - If the target language is "中文" or "Chinese", you MUST use Simplified Chinese (简体中文). Do NOT use Traditional Chinese (繁体中文).
@@ -98,12 +98,13 @@ Text: ${text}`;
 
   // Notify popup that translation has finished with latency
   const duration = Date.now() - startTime;
-  browser.runtime.sendMessage({ 
-    type: "TRANSLATION_STATUS", 
-    status: "idle",
-    latency: duration
-  }).catch(() => {});
-
+  browser.runtime
+    .sendMessage({
+      type: "TRANSLATION_STATUS",
+      status: "idle",
+      latency: duration,
+    })
+    .catch(() => {});
   return { translations };
 }
 
@@ -120,6 +121,7 @@ async function handleFetchModels(): Promise<FetchModelsResponse> {
     }
     const data = await response.json();
     const models = (data.models || []).map((m: { name: string }) => m.name);
+
     return { models };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
