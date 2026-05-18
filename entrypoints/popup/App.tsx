@@ -1,14 +1,18 @@
-import { useEffect, useState, useMemo } from "react";
 import {
-  Languages,
-  Settings2,
-  RefreshCw,
-  ChevronDown,
-  Search,
   AlertCircle,
+  ChevronDown,
+  Languages,
+  RefreshCw,
+  Search,
+  Settings2,
 } from "lucide-react";
-import { type Settings, getSettings, setSettings } from "../../utils/storage";
+import { useEffect, useMemo, useState } from "react";
 import { getTranslation } from "../../utils/i18n";
+import {
+  MessageType,
+  type TranslationStatusMessage,
+} from "../../utils/messaging";
+import { type Settings, getSettings, setSettings } from "../../utils/storage";
 import "./style.css";
 
 const COMMON_LANGUAGES = [
@@ -50,15 +54,8 @@ function App() {
         setLocalSettings(s);
       }
     });
-
-    interface TranslationStatusMessage {
-      type: "TRANSLATION_STATUS";
-      status: "translating" | "idle";
-      latency?: number;
-    }
-
     const listener = (message: TranslationStatusMessage) => {
-      if (message.type === "TRANSLATION_STATUS") {
+      if (message.type === MessageType.TRANSLATION_STATUS) {
         setIsTranslating(message.status === "translating");
         if (message.latency) setLatency(message.latency);
       }
@@ -89,7 +86,7 @@ function App() {
     setFetchError(null);
     try {
       const response = await browser.runtime.sendMessage({
-        type: "FETCH_MODELS",
+        type: MessageType.FETCH_MODELS,
       });
       if (response?.error) {
         setFetchError(response.error);

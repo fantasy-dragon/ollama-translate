@@ -1,31 +1,18 @@
+import {
+  type FetchModelsResponse,
+  MessageType,
+  type TranslateResponse,
+} from "../utils/messaging";
 import { getSettings } from "../utils/storage";
-
-export interface TranslateRequest {
-  type: "TRANSLATE";
-  texts: string[];
-}
-
-export interface TranslateResponse {
-  translations: string[];
-}
-
-export interface FetchModelsRequest {
-  type: "FETCH_MODELS";
-}
-
-export interface FetchModelsResponse {
-  models: string[];
-  error?: string;
-}
 
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === "TRANSLATE" && message.texts) {
+    if (message.type === MessageType.TRANSLATE && message.texts) {
       handleTranslate(message.texts).then(sendResponse);
       return true; // 保持通道开放以进行异步响应
     }
 
-    if (message.type === "FETCH_MODELS") {
+    if (message.type === MessageType.FETCH_MODELS) {
       handleFetchModels().then((response) => {
         sendResponse(response);
       });
@@ -43,7 +30,10 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const startTime = Date.now();
   // Notify popup that translation has started
   browser.runtime
-    .sendMessage({ type: "TRANSLATION_STATUS", status: "translating" })
+    .sendMessage({
+      type: MessageType.TRANSLATION_STATUS,
+      status: "translating",
+    })
     .catch(() => {});
 
   const translations: string[] = [];
@@ -100,7 +90,7 @@ Text: ${text}`;
   const duration = Date.now() - startTime;
   browser.runtime
     .sendMessage({
-      type: "TRANSLATION_STATUS",
+      type: MessageType.TRANSLATION_STATUS,
       status: "idle",
       latency: duration,
     })

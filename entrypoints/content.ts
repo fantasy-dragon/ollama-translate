@@ -1,5 +1,6 @@
 import "@/assets/content.css";
-import { getSettings, type Settings } from "../utils/storage";
+import { MessageType } from "../utils/messaging";
+import { type Settings, getSettings } from "../utils/storage";
 
 export default defineContentScript({
   matches: ["<all_urls>"],
@@ -154,7 +155,7 @@ async function translateElements(elements: HTMLElement[]) {
 
   try {
     const response = await browser.runtime.sendMessage({
-      type: "TRANSLATE",
+      type: MessageType.TRANSLATE,
       texts: texts,
     });
 
