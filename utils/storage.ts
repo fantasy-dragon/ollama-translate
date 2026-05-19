@@ -6,7 +6,6 @@ export interface Settings {
   minTextLength: number;
   batchSize: number;
   language: "en" | "zh";
-  translationStyle: "academic" | "casual" | "format";
   enabledDomains: string[];
 }
 
@@ -18,7 +17,6 @@ export const DEFAULT_SETTINGS: Settings = {
   minTextLength: 20,
   batchSize: 1,
   language: "zh",
-  translationStyle: "format",
   enabledDomains: [],
 };
 

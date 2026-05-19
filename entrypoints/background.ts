@@ -39,18 +39,7 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const translations: string[] = [];
   const baseUrl = settings.ollamaUrl.replace(/\/$/, "");
 
-  const stylePrompts = {
-    academic:
-      "Use an academic, formal tone. Prefer precise terminology and complex sentence structures where appropriate.",
-    casual:
-      "Use a casual, conversational tone. Make it sound natural and easy to understand.",
-    format:
-      "Maintain the original formatting. If the text contains HTML tags or specific symbols, keep them intact.",
-  };
-
   for (const text of texts) {
-    const stylePrompt =
-      stylePrompts[settings.translationStyle] || stylePrompts.format;
     const prompt = `
     你是一位精通科技与通俗文学的顶级英中翻译专家。请将用户输入的英文文本翻译为地道、流畅的中文。
     规则：

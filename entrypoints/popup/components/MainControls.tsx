@@ -53,33 +53,6 @@ export function MainControls({
           </button>
         </div>
       </div>
-
-      {/* Translation Style Segmented Control */}
-      <div className="space-y-2 pt-2 border-t border-border/50">
-        <span className="text-xs font-medium text-muted-foreground">
-          {t.translationStyle}
-        </span>
-        <div className="grid grid-cols-3 gap-1 p-1 bg-muted rounded-lg">
-          {(["academic", "casual", "format"] as const).map((style) => (
-            <button
-              key={style}
-              type="button"
-              onClick={() => onUpdateSettings({ translationStyle: style })}
-              className={`text-[10px] font-medium py-1.5 rounded-md transition-all ${
-                settings.translationStyle === style
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {style === "academic"
-                ? t.styleAcademic
-                : style === "casual"
-                ? t.styleCasual
-                : t.styleFormat}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
