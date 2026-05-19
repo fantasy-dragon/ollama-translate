@@ -51,12 +51,19 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   for (const text of texts) {
     const stylePrompt =
       stylePrompts[settings.translationStyle] || stylePrompts.format;
-    const prompt = `You are a professional translator. Translate the following text into ${settings.targetLanguage} .
-${stylePrompt}
-CRITICAL REQUIREMENTS:
-- If the target language is "中文" or "Chinese", you MUST use Simplified Chinese (简体中文). Do NOT use Traditional Chinese (繁体中文).
-- Return ONLY the final translated text. No explanations, no quotes, no conversational filler.
-Text: ${text}`;
+    const prompt = `
+    你是一位精通科技与通俗文学的顶级英中翻译专家。请将用户输入的英文文本翻译为地道、流畅的中文。
+    规则：
+
+    彻底摆脱“翻译腔”，禁止直译。请根据中文的表达习惯和语序进行润色和意译。
+
+    保持专业术语的准确性，科技/行业专有名词如无标准通用翻译，请保留原文或在括号中注明。
+
+    严格保留原文的 Markdown 格式、代码块及段落结构。
+
+    严禁输出任何多余的寒暄、解释或前言，直接输出翻译后的中文结果。
+    
+    文本内容: ${text}`;
 
     try {
       const response = await fetch(`${baseUrl}/api/generate`, {

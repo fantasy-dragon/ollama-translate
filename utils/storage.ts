@@ -12,7 +12,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   ollamaUrl: "http://127.0.0.1:11434",
-  model: "qwen2.5:3b",
+  model: "qwen2.5:7b",
   targetLanguage: "中文",
   autoTranslate: false,
   minTextLength: 20,
