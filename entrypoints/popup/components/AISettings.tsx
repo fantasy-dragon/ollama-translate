@@ -14,14 +14,12 @@ const COMMON_LANGUAGES = [
 ];
 
 interface AISettingsProps {
-  t: Record<string, string>;
   settings: Settings;
   models: string[];
   onUpdateSettings: (update: Partial<Settings>) => void;
 }
 
 export function AISettings({
-  t,
   settings,
   models,
   onUpdateSettings,
@@ -43,7 +41,7 @@ export function AISettings({
             htmlFor="model-select-button"
             className="text-xs font-medium text-muted-foreground"
           >
-            {t.aiModel}
+            AI 模型
           </label>
           {settings.model && (
             <span className="text-[9px] font-bold text-green-500 uppercase">
@@ -59,7 +57,7 @@ export function AISettings({
             className="w-full flex items-center justify-between px-3 py-2 bg-background border border-input rounded-lg text-xs hover:bg-accent transition-colors group"
           >
             <span className="truncate max-w-[180px]">
-              {settings.model || t.selectModel}
+              {settings.model || "选择模型..."}
             </span>
             <ChevronDown
               className={`w-4 h-4 opacity-40 transition-transform group-hover:opacity-100 ${
@@ -90,7 +88,7 @@ export function AISettings({
                 ))
               ) : (
                 <div className="p-2 text-xs text-muted-foreground italic text-center">
-                  {t.noModelsFound}
+                  未找到模型，请检查 Ollama 是否启动。
                 </div>
               )}
             </div>
@@ -102,9 +100,9 @@ export function AISettings({
       <div className="space-y-2">
         <label
           htmlFor="language-search-input"
-          className="text-xs font-medium text-muted-foreground"
+          className="text-xs font-medium text-muted-foreground "
         >
-          {t.targetLanguage}
+          目标语言
         </label>
         <div className="relative group">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity">
@@ -121,7 +119,7 @@ export function AISettings({
             }}
             onBlur={() => setTimeout(() => setIsLangFocus(false), 200)}
             className="w-full pl-9 pr-3 py-2 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder={t.targetLanguagePlaceholder}
+            placeholder="搜索语言..."
           />
           {isLangFocus && (
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border rounded-lg shadow-xl z-50 max-h-[160px] overflow-y-auto p-1">
@@ -141,7 +139,7 @@ export function AISettings({
                 ))
               ) : (
                 <div className="p-2 text-xs text-muted-foreground text-center">
-                  No results
+                  无结果
                 </div>
               )}
             </div>

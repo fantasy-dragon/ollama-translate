@@ -5,7 +5,6 @@ export interface Settings {
   autoTranslate: boolean;
   minTextLength: number;
   batchSize: number;
-  language: "en" | "zh";
   enabledDomains: string[];
 }
 
@@ -16,7 +15,6 @@ export const DEFAULT_SETTINGS: Settings = {
   autoTranslate: false,
   minTextLength: 20,
   batchSize: 1,
-  language: "zh",
   enabledDomains: [],
 };
 

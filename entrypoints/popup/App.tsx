@@ -1,6 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { getTranslation } from "../../utils/i18n";
+import { useEffect, useState } from "react";
 import {
   MessageType,
   type TranslationStatusMessage,
@@ -20,10 +19,6 @@ function App() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [currentHostname, setCurrentHostname] = useState("");
-
-  const t = useMemo(() => {
-    return getTranslation("zh");
-  }, []);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -124,14 +119,12 @@ function App() {
   return (
     <div className="w-[320px] min-h-[400px] bg-background text-foreground font-sans p-4 space-y-4 overflow-x-hidden">
       <Header
-        t={t}
         isTranslating={isTranslating}
         loadingModels={loadingModels}
         onFetchModels={fetchModels}
       />
 
       <MainControls
-        t={t}
         settings={settings}
         currentHostname={currentHostname}
         isCurrentSiteEnabled={isCurrentSiteEnabled}
@@ -140,14 +133,12 @@ function App() {
       />
 
       <AISettings
-        t={t}
         settings={settings}
         models={models}
         onUpdateSettings={handleUpdate}
       />
 
       <AdvancedSettings
-        t={t}
         settings={settings}
         onUpdateSettings={handleUpdate}
       />

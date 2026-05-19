@@ -3,13 +3,11 @@ import { useState } from "react";
 import type { Settings } from "../../../utils/storage";
 
 interface AdvancedSettingsProps {
-  t: Record<string, string>;
   settings: Settings;
   onUpdateSettings: (update: Partial<Settings>) => void;
 }
 
 export function AdvancedSettings({
-  t,
   settings,
   onUpdateSettings,
 }: AdvancedSettingsProps) {
@@ -27,7 +25,7 @@ export function AdvancedSettings({
             isAdvancedOpen ? "rotate-90" : ""
           }`}
         />
-        {t.advancedSettings}
+        高级设置
       </button>
 
       {isAdvancedOpen && (
@@ -36,7 +34,7 @@ export function AdvancedSettings({
             htmlFor="service-endpoint"
             className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
           >
-            {t.serviceEndpoint}
+            服务地址
           </label>
           <input
             id="service-endpoint"

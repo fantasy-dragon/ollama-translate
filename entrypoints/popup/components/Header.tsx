@@ -1,14 +1,12 @@
 import { Languages, RefreshCw } from "lucide-react";
 
 interface HeaderProps {
-  t: Record<string, string>;
   isTranslating: boolean;
   loadingModels: boolean;
   onFetchModels: () => void;
 }
 
 export function Header({
-  t,
   isTranslating,
   loadingModels,
   onFetchModels,
@@ -19,7 +17,7 @@ export function Header({
         <div className="p-1.5 bg-primary rounded-lg text-primary-foreground shadow-sm">
           <Languages className="w-5 h-5" />
         </div>
-        <h1 className="text-sm font-semibold tracking-tight">{t.title}</h1>
+        <h1 className="text-sm font-semibold tracking-tight">Ollama 翻译</h1>
       </div>
 
       <div className="flex items-center gap-1">
@@ -30,7 +28,7 @@ export function Header({
             }`}
           />
           <span className="opacity-70">
-            {isTranslating ? t.statusTranslating : t.statusOnline}
+            {isTranslating ? "翻译中" : "在线"}
           </span>
         </div>
 
@@ -40,7 +38,7 @@ export function Header({
           className={`p-1.5 hover:bg-secondary rounded-md transition-colors ${
             loadingModels ? "animate-spin" : ""
           }`}
-          title={t.syncStatus}
+          title="同步状态"
         >
           <RefreshCw className="w-4 h-4 opacity-60" />
         </button>

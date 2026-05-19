@@ -1,7 +1,6 @@
 import type { Settings } from "../../../utils/storage";
 
 interface MainControlsProps {
-  t: Record<string, string>;
   settings: Settings;
   currentHostname: string;
   isCurrentSiteEnabled: boolean;
@@ -10,7 +9,6 @@ interface MainControlsProps {
 }
 
 export function MainControls({
-  t,
   settings,
   currentHostname,
   isCurrentSiteEnabled,
@@ -28,7 +26,7 @@ export function MainControls({
               htmlFor="site-translate-toggle"
               className="text-xs font-semibold leading-none cursor-pointer"
             >
-              {t.enableOnSite}
+              此网站自动翻译
             </label>
             <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">
               {currentHostname || "..."}
