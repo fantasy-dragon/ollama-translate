@@ -1,7 +1,8 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useSnapshot } from "valtio";
-import { popupStore, storeActions } from "../store/popup-store";
+import { settingsStore, settingsActions } from "../store/settings-store";
+import { modelsStore } from "../store/models-store";
 
 function ModelSelector({
   models, 
@@ -82,14 +83,15 @@ function ModelSelector({
 
 
 export function AISettings() {
-  const { settings, models } = useSnapshot(popupStore);
+  const { data: settings } = useSnapshot(settingsStore);
+  const { list: models } = useSnapshot(modelsStore);
 
   return (
     <div className="space-y-4">
       <ModelSelector
         models={models}
         selectedModel={settings?.model ?? ""}
-        onSelect={(model) => storeActions.updateSettings({ model })}
+        onSelect={(model) => settingsActions.updateSettings({ model })}
       />
     </div>
   );

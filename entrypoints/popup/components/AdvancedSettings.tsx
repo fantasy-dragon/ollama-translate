@@ -1,10 +1,12 @@
 import { Settings2 } from "lucide-react";
 import { useState } from "react";
 import { useSnapshot } from "valtio";
-import { popupStore, storeActions } from "../store/popup-store";
+import { settingsStore, settingsActions } from "../store/settings-store";
+import { translationStore } from "../store/translation-store";
 
 export function AdvancedSettings() {
-  const { settings, latency } = useSnapshot(popupStore);
+  const { data: settings } = useSnapshot(settingsStore);
+  const { latency } = useSnapshot(translationStore);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const latencySeconds = latency != null ? (latency / 1000).toFixed(1) : null;
@@ -45,7 +47,7 @@ export function AdvancedSettings() {
               id="service-endpoint"
               type="text"
               value={settings?.ollamaUrl ?? ""}
-              onChange={(e) => storeActions.updateSettings({ ollamaUrl: e.target.value })}
+              onChange={(e) => settingsActions.updateSettings({ ollamaUrl: e.target.value })}
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="http://127.0.0.1:11434"
             />
@@ -66,7 +68,7 @@ export function AdvancedSettings() {
               max={500}
               value={settings?.minTextLength ?? 20}
               onChange={(e) =>
-                storeActions.updateSettings({
+                settingsActions.updateSettings({
                   minTextLength: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                 })
               }
@@ -87,7 +89,7 @@ export function AdvancedSettings() {
               type="text"
               value={settings?.textSelector ?? ""}
               onChange={(e) =>
-                storeActions.updateSettings({ textSelector: e.target.value })
+                settingsActions.updateSettings({ textSelector: e.target.value })
               }
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="p, h1, h2, h3, h4, h5, h6, li"
@@ -107,7 +109,7 @@ export function AdvancedSettings() {
               type="text"
               value={settings?.excludedTags ?? ""}
               onChange={(e) =>
-                storeActions.updateSettings({ excludedTags: e.target.value })
+                settingsActions.updateSettings({ excludedTags: e.target.value })
               }
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="SCRIPT,STYLE,CODE"

@@ -1,9 +1,9 @@
 import { useSnapshot } from "valtio";
-import { popupStore, storeActions } from "../store/popup-store";
+import { settingsStore, settingsActions } from "../store/settings-store";
 
 export function MainControls() {
-  const { settings, currentHostname, isCurrentSiteEnabled } =
-    useSnapshot(popupStore);
+  const { data: settings, currentHostname, isCurrentSiteEnabled } =
+    useSnapshot(settingsStore);
 
   return (
     <div className="space-y-4">
@@ -23,7 +23,7 @@ export function MainControls() {
           <button
             id="site-translate-toggle"
             type="button"
-            onClick={storeActions.toggleCurrentSite}
+            onClick={settingsActions.toggleCurrentSite}
             role="switch"
             aria-checked={isCurrentSiteEnabled}
             disabled={!currentHostname}

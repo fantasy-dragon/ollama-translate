@@ -6,14 +6,15 @@ import { AdvancedSettings } from "./components/AdvancedSettings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Header } from "./components/Header";
 import { MainControls } from "./components/MainControls";
-import { popupStore, storeActions } from "./store/popup-store";
+import { settingsStore, modelsStore, initApp } from "./store/popup-store";
 import "./style.css";
 
 function App() {
-  const { settings, fetchError } = useSnapshot(popupStore);
+  const { data: settings } = useSnapshot(settingsStore);
+  const { error: fetchError } = useSnapshot(modelsStore);
 
   useEffect(() => {
-    storeActions.init();
+    initApp();
   }, []);
 
   if (!settings) {

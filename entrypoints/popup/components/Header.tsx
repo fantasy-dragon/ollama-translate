@@ -1,9 +1,11 @@
 import { Languages, RefreshCw } from "lucide-react";
 import { useSnapshot } from "valtio";
-import { popupStore, storeActions } from "../store/popup-store";
+import { translationStore } from "../store/translation-store";
+import { modelsStore, modelsActions } from "../store/models-store";
 
 export function Header() {
-  const { isTranslating, loadingModels } = useSnapshot(popupStore);
+  const { isTranslating } = useSnapshot(translationStore);
+  const { loading } = useSnapshot(modelsStore);
 
   return (
     <header className="flex items-center justify-between mb-2">
@@ -28,9 +30,9 @@ export function Header() {
 
         <button
           type="button"
-          onClick={storeActions.fetchModels}
+          onClick={modelsActions.fetch}
           className={`p-1.5 hover:bg-secondary rounded-md transition-colors ${
-            loadingModels ? "animate-spin" : ""
+            loading ? "animate-spin" : ""
           }`}
           title="同步状态"
         >
