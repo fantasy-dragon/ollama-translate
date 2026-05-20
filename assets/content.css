@@ -5,9 +5,9 @@
   display: block;
   margin-top: 6px;
   margin-bottom: 4px;
-  font-size: 0.825em;
   line-height: 1.65;
   letter-spacing: 0.02em;
+  /* font-size: 0.825em; */
   color: color-mix(in srgb, currentColor 50%, transparent);
   animation: ollama-fade-in 0.3s ease-out;
 }

@@ -109,6 +109,7 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
       setCachedTranslation(text, settings.model, result);
       translations.push(result);
     } catch (error: unknown) {
+      
       translations.push(
         `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`,
       );
