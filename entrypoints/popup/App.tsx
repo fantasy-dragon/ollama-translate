@@ -7,6 +7,7 @@ import {
 import { type Settings, getSettings, setSettings } from "../../utils/storage";
 import { AISettings } from "./components/AISettings";
 import { AdvancedSettings } from "./components/AdvancedSettings";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Header } from "./components/Header";
 import { MainControls } from "./components/MainControls";
 import "./style.css";
@@ -162,48 +163,50 @@ function App() {
   }
 
   return (
-    <div className="w-[320px] min-h-100 bg-background text-foreground font-sans p-3 overflow-x-hidden">
-      <div className="bg-card rounded-2xl p-4 space-y-5 shadow-xl border-none">
-        <Header
-          isTranslating={isTranslating}
-          loadingModels={loadingModels}
-          onFetchModels={fetchModels}
-        />
+    <ErrorBoundary>
+      <div className="w-[320px] min-h-100 bg-background text-foreground font-sans p-3 overflow-x-hidden">
+        <div className="bg-card rounded-2xl p-4 space-y-5 shadow-xl border-none">
+          <Header
+            isTranslating={isTranslating}
+            loadingModels={loadingModels}
+            onFetchModels={fetchModels}
+          />
 
-        <div className="h-px w-full bg-secondary" />
+          <div className="h-px w-full bg-secondary" />
 
-        <MainControls
-          settings={settings}
-          currentHostname={currentHostname}
-          isCurrentSiteEnabled={isCurrentSiteEnabled}
-          onToggleCurrentSite={toggleCurrentSite}
-          onUpdateSettings={handleUpdate}
-        />
+          <MainControls
+            settings={settings}
+            currentHostname={currentHostname}
+            isCurrentSiteEnabled={isCurrentSiteEnabled}
+            onToggleCurrentSite={toggleCurrentSite}
+            onUpdateSettings={handleUpdate}
+          />
 
-        <AISettings
-          settings={settings}
-          models={models}
-          onUpdateSettings={handleUpdate}
-        />
+          <AISettings
+            settings={settings}
+            models={models}
+            onUpdateSettings={handleUpdate}
+          />
 
-        <AdvancedSettings
-          settings={settings}
-          latency={latency}
-          onUpdateSettings={handleUpdate}
-        />
-      </div>
-
-      {fetchError && (
-        <div className="relative p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3 animate-in slide-in-from-bottom-2">
-          <div className="p-1 bg-destructive/20 rounded text-destructive mt-0.5">
-            <AlertCircle className="w-3 h-3" strokeWidth={3} />
-          </div>
-          <p className="text-[10px] text-destructive font-medium leading-relaxed">
-            {fetchError}
-          </p>
+          <AdvancedSettings
+            settings={settings}
+            latency={latency}
+            onUpdateSettings={handleUpdate}
+          />
         </div>
-      )}
-    </div>
+
+        {fetchError && (
+          <div className="relative p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3 animate-in slide-in-from-bottom-2">
+            <div className="p-1 bg-destructive/20 rounded text-destructive mt-0.5">
+              <AlertCircle className="w-3 h-3" strokeWidth={3} />
+            </div>
+            <p className="text-[10px] text-destructive font-medium leading-relaxed">
+              {fetchError}
+            </p>
+          </div>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
 

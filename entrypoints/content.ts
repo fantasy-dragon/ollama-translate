@@ -5,20 +5,7 @@ import { getCachedTranslation } from "../utils/cache";
 
 const TRANSLATION_CLASS = "ollama-translation-wrap";
 const TRANSLATING_CLASS = "ollama-translating";
-const TEXT_ELEMENT_SELECTOR = "p, h1, h2, h3, h4, h5, h6, li, article div";
-const EXCLUDED_TAGS = new Set([
-  "SCRIPT",
-  "STYLE",
-  "CODE",
-  "PRE",
-  "NAV",
-  "HEADER",
-  "FOOTER",
-  "BUTTON",
-  "INPUT",
-]);
 const MUTATION_DEBOUNCE_MS = 500;
-const MIN_TEXT_LENGTH = 20;
 const LINK_DENSITY_THRESHOLD = 50;
 
 /** 队列处理 debounce 时间（毫秒） */
@@ -32,10 +19,24 @@ function isTranslated(el: HTMLElement): boolean {
   );
 }
 
-function shouldTranslate(el: HTMLElement): boolean {
+/**
+ * 从 settings 构建排除标签 Set
+ */
+function buildExcludedTags(settings: Settings): Set<string> {
+  return new Set(
+    settings.excludedTags
+      .split(",")
+      .map((t) => t.trim().toUpperCase())
+      .filter(Boolean),
+  );
+}
+
+function shouldTranslate(el: HTMLElement, settings: Settings): boolean {
   const text = el.innerText.trim();
-  if (text.length < MIN_TEXT_LENGTH) return false;
-  if (EXCLUDED_TAGS.has(el.tagName)) return false;
+  if (text.length < settings.minTextLength) return false;
+
+  const excludedTags = buildExcludedTags(settings);
+  if (excludedTags.has(el.tagName)) return false;
 
   const links = el.querySelectorAll("a");
   if (links.length > 3 && text.length / links.length < LINK_DENSITY_THRESHOLD) {
@@ -45,11 +46,11 @@ function shouldTranslate(el: HTMLElement): boolean {
   return true;
 }
 
-function startObserving(observer: IntersectionObserver) {
-  const elements = document.querySelectorAll(TEXT_ELEMENT_SELECTOR);
+function startObserving(observer: IntersectionObserver, settings: Settings) {
+  const elements = document.querySelectorAll(settings.textSelector);
   for (const el of elements) {
     const htmlEl = el as HTMLElement;
-    if (shouldTranslate(htmlEl) && !isTranslated(htmlEl)) {
+    if (shouldTranslate(htmlEl, settings) && !isTranslated(htmlEl)) {
       observer.observe(htmlEl);
     }
   }
@@ -210,8 +211,12 @@ export default defineContentScript({
     const hostname = window.location.hostname.toLowerCase();
     const translationQueue = new TranslationQueue();
 
-    const start = () => {
+    let currentSettings: Settings;
+
+    const start = async () => {
       if (observer) return;
+
+      currentSettings = await getSettings();
 
       observer = new IntersectionObserver(
         (entries) => {
@@ -219,7 +224,7 @@ export default defineContentScript({
           for (const entry of entries) {
             if (entry.isIntersecting) {
               const el = entry.target as HTMLElement;
-              if (shouldTranslate(el) && !isTranslated(el)) {
+              if (shouldTranslate(el, currentSettings) && !isTranslated(el)) {
                 toTranslate.push(el);
                 observer?.unobserve(el);
               }
@@ -232,12 +237,12 @@ export default defineContentScript({
         { threshold: 0.1 },
       );
 
-      startObserving(observer);
+      startObserving(observer, currentSettings);
 
       mutationObserver = new MutationObserver(() => {
         clearTimeout(mutationTimeout);
         mutationTimeout = setTimeout(() => {
-          if (observer) startObserving(observer);
+          if (observer) startObserving(observer, currentSettings);
         }, MUTATION_DEBOUNCE_MS);
       });
       mutationObserver.observe(document.body, {
