@@ -1,8 +1,129 @@
-import { Settings2 } from "lucide-react";
-import { useState } from "react";
+import { Globe, Plus, Settings2, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useSnapshot } from "valtio";
 import { settingsStore, settingsActions } from "../store/settings-store";
 import { translationStore } from "../store/translation-store";
+import type { ListMode } from "../../../utils/storage";
+
+const LIST_MODE_LABELS: Record<ListMode, string> = {
+  whitelist: "白名单",
+  blacklist: "黑名单",
+};
+
+function DomainListManager() {
+  const { data: settings } = useSnapshot(settingsStore);
+  const [newDomain, setNewDomain] = useState("");
+  const [showInput, setShowInput] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showInput && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showInput]);
+
+  if (!settings) return null;
+
+  const mode = settings.listMode;
+  const domainList = settings.domainList;
+
+  const handleAdd = () => {
+    settingsActions.addDomain(newDomain);
+    setNewDomain("");
+    setShowInput(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleAdd();
+    if (e.key === "Escape") {
+      setShowInput(false);
+      setNewDomain("");
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {LIST_MODE_LABELS[mode]}域名 ({domainList.length})
+        </span>
+        <button
+          type="button"
+          onClick={() => setShowInput(true)}
+          className="flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          <Plus className="w-3 h-3" />
+          添加
+        </button>
+      </div>
+
+      {/* 添加域名输入框 */}
+      {showInput && (
+        <div className="flex items-center gap-1">
+          <input
+            ref={inputRef}
+            type="text"
+            value={newDomain}
+            onChange={(e) => setNewDomain(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="example.com"
+            className="flex-1 px-2 py-1 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="p-1 text-primary hover:text-primary/80 transition-colors"
+            title="确认添加"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowInput(false);
+              setNewDomain("");
+            }}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            title="取消"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* 域名列表 */}
+      {domainList.length > 0 ? (
+        <div className="max-h-32 overflow-y-auto space-y-1">
+          {domainList.map((domain) => (
+            <div
+              key={domain}
+              className="flex items-center justify-between px-2 py-1.5 bg-background rounded-md group"
+            >
+              <div className="flex items-center gap-1.5 truncate">
+                <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
+                <span className="text-[11px] truncate">{domain}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => settingsActions.removeDomain(domain)}
+                className="p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+                title={`从${LIST_MODE_LABELS[mode]}移除`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground italic">
+          {mode === "whitelist"
+            ? "尚未添加任何域名，所有网站均不会自动翻译"
+            : "尚未添加任何域名，所有网站均会自动翻译"}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function AdvancedSettings() {
   const { data: settings } = useSnapshot(settingsStore);
@@ -113,6 +234,11 @@ export function AdvancedSettings() {
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="SCRIPT,STYLE,CODE"
             />
+          </div>
+
+          {/* 域名列表管理 */}
+          <div className="pt-2 border-t border-border/50">
+            <DomainListManager />
           </div>
 
           {/* 延迟信息 */}

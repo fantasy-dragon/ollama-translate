@@ -4,18 +4,38 @@
  * 管理：
  * - 用户设置（ollamaUrl, model, textSelector 等）
  * - 当前标签页 hostname
- * - 派生：当前站点是否启用自动翻译
+ * - 派生：当前站点是否启用自动翻译（支持白名单/黑名单模式）
  */
 import { proxy } from "valtio";
-import { type Settings, getSettings, setSettings } from "../../../utils/storage";
+import { type Settings, type ListMode, getSettings, setSettings } from "../../../utils/storage";
 import { modelsActions } from "./models-store";
+
+// ── 辅助函数 ──
+
+/** 判断 hostname 是否匹配列表中的某个域名（支持子域名匹配） */
+function matchDomain(hostname: string, domain: string): boolean {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+/** 根据 listMode 和 domainList 判断站点是否应自动翻译 */
+function isSiteEnabled(
+  hostname: string,
+  listMode: ListMode,
+  domainList: readonly string[],
+): boolean {
+  const inList = domainList.some((d) => matchDomain(hostname, d));
+  return listMode === "whitelist" ? inList : !inList;
+}
 
 // ── State ──
 
 interface SettingsStore {
   data: Settings | null;
   currentHostname: string;
+  /** 当前站点是否启用自动翻译（根据 listMode + domainList 计算） */
   isCurrentSiteEnabled: boolean;
+  /** 当前站点是否在 domainList 中（不考虑模式） */
+  isCurrentSiteInList: boolean;
 }
 
 export const settingsStore = proxy<SettingsStore>({
@@ -23,10 +43,16 @@ export const settingsStore = proxy<SettingsStore>({
   currentHostname: "",
   get isCurrentSiteEnabled() {
     if (!this.data || !this.currentHostname) return false;
-    return (this.data.enabledDomains as readonly string[]).some(
-      (d: string) =>
-        this.currentHostname === d ||
-        this.currentHostname.endsWith(`.${d}`),
+    return isSiteEnabled(
+      this.currentHostname,
+      this.data.listMode,
+      this.data.domainList,
+    );
+  },
+  get isCurrentSiteInList() {
+    if (!this.data || !this.currentHostname) return false;
+    return this.data.domainList.some((d) =>
+      matchDomain(this.currentHostname, d),
     );
   },
 });
@@ -59,6 +85,14 @@ export const settingsActions = {
     }
   },
 
+  /** 切换 listMode（whitelist ↔ blacklist） */
+  toggleListMode: () => {
+    if (!settingsStore.data) return;
+    const newMode: ListMode =
+      settingsStore.data.listMode === "whitelist" ? "blacklist" : "whitelist";
+    settingsActions.updateSettings({ listMode: newMode });
+  },
+
   queryCurrentTab: async () => {
     try {
       const [tab] = await browser.tabs.query({
@@ -75,22 +109,37 @@ export const settingsActions = {
     }
   },
 
+  /** 将当前站点加入或移出域名列表 */
   toggleCurrentSite: () => {
     if (!settingsStore.data || !settingsStore.currentHostname) return;
-    const { enabledDomains } = settingsStore.data;
+    const { domainList } = settingsStore.data;
     const { currentHostname } = settingsStore;
-    const isEnabled = enabledDomains.some(
-      (d: string) =>
-        currentHostname === d || currentHostname.endsWith(`.${d}`),
+    const inList = domainList.some((d) => matchDomain(currentHostname, d));
+
+    const newList = inList
+      ? domainList.filter((d) => !matchDomain(currentHostname, d))
+      : [...domainList, currentHostname];
+
+    settingsActions.updateSettings({ domainList: newList });
+  },
+
+  /** 从域名列表中移除指定域名 */
+  removeDomain: (domain: string) => {
+    if (!settingsStore.data) return;
+    const newList = settingsStore.data.domainList.filter(
+      (d) => d !== domain,
     );
+    settingsActions.updateSettings({ domainList: newList });
+  },
 
-    const newDomains = isEnabled
-      ? enabledDomains.filter(
-          (d: string) =>
-            !(currentHostname === d || currentHostname.endsWith(`.${d}`)),
-        )
-      : [...enabledDomains, currentHostname];
-
-    settingsActions.updateSettings({ enabledDomains: newDomains });
+  /** 添加域名到列表 */
+  addDomain: (domain: string) => {
+    if (!settingsStore.data) return;
+    const normalized = domain.toLowerCase().trim();
+    if (!normalized) return;
+    if (settingsStore.data.domainList.includes(normalized)) return;
+    settingsActions.updateSettings({
+      domainList: [...settingsStore.data.domainList, normalized],
+    });
   },
 };
