@@ -4,7 +4,8 @@ export interface Settings {
   autoTranslate: boolean;
   minTextLength: number;
   batchSize: number;
-  enabledDomains: string[];
+  /** 已启用自动翻译的域名列表 */
+  enabledDomains: readonly string[];
   /** CSS 选择器，用于匹配需要翻译的文本元素 */
   textSelector: string;
   /** 需要排除的标签名（逗号分隔） */

@@ -1,25 +1,13 @@
-import type { Settings } from "../../../utils/storage";
+import { useSnapshot } from "valtio";
+import { popupStore, storeActions } from "../store/popup-store";
 
-interface MainControlsProps {
-  settings: Settings;
-  currentHostname: string;
-  isCurrentSiteEnabled: boolean;
-  onToggleCurrentSite: () => void;
-  onUpdateSettings: (update: Partial<Settings>) => void;
-}
+export function MainControls() {
+  const { settings, currentHostname, isCurrentSiteEnabled } =
+    useSnapshot(popupStore);
 
-export function MainControls({
-  settings,
-  currentHostname,
-  isCurrentSiteEnabled,
-  onToggleCurrentSite,
-  onUpdateSettings,
-}: MainControlsProps) {
   return (
     <div className="space-y-4">
-      {/* Auto-Translate Functionality (Merged UI) */}
       <div className="space-y-4">
-        {/* 1. Current Site Switch */}
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <label
@@ -35,7 +23,7 @@ export function MainControls({
           <button
             id="site-translate-toggle"
             type="button"
-            onClick={onToggleCurrentSite}
+            onClick={storeActions.toggleCurrentSite}
             role="switch"
             aria-checked={isCurrentSiteEnabled}
             disabled={!currentHostname}

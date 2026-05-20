@@ -1,18 +1,10 @@
 import { Settings2 } from "lucide-react";
 import { useState } from "react";
-import type { Settings } from "../../../utils/storage";
+import { useSnapshot } from "valtio";
+import { popupStore, storeActions } from "../store/popup-store";
 
-interface AdvancedSettingsProps {
-  settings: Settings;
-  latency?: number | null;
-  onUpdateSettings: (update: Partial<Settings>) => void;
-}
-
-export function AdvancedSettings({
-  settings,
-  latency,
-  onUpdateSettings,
-}: AdvancedSettingsProps) {
+export function AdvancedSettings() {
+  const { settings, latency } = useSnapshot(popupStore);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const latencySeconds = latency != null ? (latency / 1000).toFixed(1) : null;
@@ -52,8 +44,8 @@ export function AdvancedSettings({
             <input
               id="service-endpoint"
               type="text"
-              value={settings.ollamaUrl}
-              onChange={(e) => onUpdateSettings({ ollamaUrl: e.target.value })}
+              value={settings?.ollamaUrl ?? ""}
+              onChange={(e) => storeActions.updateSettings({ ollamaUrl: e.target.value })}
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="http://127.0.0.1:11434"
             />
@@ -72,9 +64,9 @@ export function AdvancedSettings({
               type="number"
               min={1}
               max={500}
-              value={settings.minTextLength}
+              value={settings?.minTextLength ?? 20}
               onChange={(e) =>
-                onUpdateSettings({
+                storeActions.updateSettings({
                   minTextLength: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                 })
               }
@@ -93,9 +85,9 @@ export function AdvancedSettings({
             <input
               id="text-selector"
               type="text"
-              value={settings.textSelector}
+              value={settings?.textSelector ?? ""}
               onChange={(e) =>
-                onUpdateSettings({ textSelector: e.target.value })
+                storeActions.updateSettings({ textSelector: e.target.value })
               }
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="p, h1, h2, h3, h4, h5, h6, li"
@@ -113,9 +105,9 @@ export function AdvancedSettings({
             <input
               id="excluded-tags"
               type="text"
-              value={settings.excludedTags}
+              value={settings?.excludedTags ?? ""}
               onChange={(e) =>
-                onUpdateSettings({ excludedTags: e.target.value })
+                storeActions.updateSettings({ excludedTags: e.target.value })
               }
               className="w-full px-2.5 py-1.5 bg-background border-none rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/20"
               placeholder="SCRIPT,STYLE,CODE"

@@ -1,26 +1,20 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import type { Settings } from "../../../utils/storage";
-
-interface AISettingsProps {
-  settings: Settings;
-  models: string[];
-  onUpdateSettings: (update: Partial<Settings>) => void;
-}
+import { useSnapshot } from "valtio";
+import { popupStore, storeActions } from "../store/popup-store";
 
 function ModelSelector({
   models, 
   selectedModel,
   onSelect,
 }: {
-  models: string[];
+  models: readonly string[];
   selectedModel: string;
   onSelect: (model: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const modelButtonId = "model-select-button";
-
 
   return (
     <div className="space-y-2">
@@ -87,17 +81,15 @@ function ModelSelector({
 }
 
 
-export function AISettings({
-  settings,
-  models,
-  onUpdateSettings,
-}: AISettingsProps) {
+export function AISettings() {
+  const { settings, models } = useSnapshot(popupStore);
+
   return (
     <div className="space-y-4">
       <ModelSelector
         models={models}
-        selectedModel={settings.model}
-        onSelect={(model) => onUpdateSettings({ model })}
+        selectedModel={settings?.model ?? ""}
+        onSelect={(model) => storeActions.updateSettings({ model })}
       />
     </div>
   );

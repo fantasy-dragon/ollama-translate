@@ -1,16 +1,10 @@
 import { Languages, RefreshCw } from "lucide-react";
+import { useSnapshot } from "valtio";
+import { popupStore, storeActions } from "../store/popup-store";
 
-interface HeaderProps {
-  isTranslating: boolean;
-  loadingModels: boolean;
-  onFetchModels: () => void;
-}
+export function Header() {
+  const { isTranslating, loadingModels } = useSnapshot(popupStore);
 
-export function Header({
-  isTranslating,
-  loadingModels,
-  onFetchModels,
-}: HeaderProps) {
   return (
     <header className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-2">
@@ -34,7 +28,7 @@ export function Header({
 
         <button
           type="button"
-          onClick={onFetchModels}
+          onClick={storeActions.fetchModels}
           className={`p-1.5 hover:bg-secondary rounded-md transition-colors ${
             loadingModels ? "animate-spin" : ""
           }`}
