@@ -4,12 +4,11 @@ import {
   sendExtensionMessage,
   type TranslateResponse,
 } from "../utils/messaging";
-import { buildBatchPrompt, parseBatchResponse } from "../utils/prompts";
+import { buildTranslatePrompt } from "../utils/prompts";
 import { withRetry } from "../utils/retry";
 import {
   filterCached,
   setCachedTranslation,
-  translationCache,
 } from "../utils/cache";
 import { getSettings } from "../utils/storage";
 
@@ -89,50 +88,30 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const startTime = Date.now();
   sendStatus("translating");
 
-  // 1. 检查缓存
-  const { uncached, cachedTranslations } = filterCached(texts, settings.model);
-
-  // 如果全部命中缓存，直接返回
-  if (uncached.length === 0) {
-    const translations = texts.map((_, i) => cachedTranslations.get(i) ?? "");
-    sendStatus("idle", Date.now() - startTime);
-    return { translations };
-  }
-
-  // 2. 批量翻译未缓存的文本
-  let batchResults: string[];
-  try {
-    const prompt = buildBatchPrompt(uncached);
-    const data = await ollamaFetch<{ response: string }>("/api/generate", {
-      model: settings.model,
-      prompt,
-      stream: false,
-    });
-    batchResults = parseBatchResponse(data.response.trim(), uncached.length);
-  } catch (error: unknown) {
-    sendStatus("idle", Date.now() - startTime);
-    return {
-      translations: texts.map(
-        () => `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`,
-      ),
-    };
-  }
-
-  // 3. 写入缓存
-  for (let i = 0; i < uncached.length; i++) {
-    setCachedTranslation(uncached[i], settings.model, batchResults[i]);
-  }
-
-  // 4. 按原始顺序组装结果
   const translations: string[] = [];
-  let uncachedIndex = 0;
-  for (let i = 0; i < texts.length; i++) {
-    const cached = cachedTranslations.get(i);
-    if (cached !== undefined) {
-      translations.push(cached);
-    } else {
-      translations.push(batchResults[uncachedIndex] ?? "");
-      uncachedIndex++;
+
+  for (const text of texts) {
+    // 检查缓存
+    const cached = filterCached([text], settings.model);
+    if (cached.uncached.length === 0) {
+      translations.push(cached.cachedTranslations.get(0) ?? "");
+      continue;
+    }
+
+    try {
+      const prompt = buildTranslatePrompt(text);
+      const data = await ollamaFetch<{ response: string }>("/api/generate", {
+        model: settings.model,
+        prompt,
+        stream: false,
+      });
+      const result = data.response.trim();
+      setCachedTranslation(text, settings.model, result);
+      translations.push(result);
+    } catch (error: unknown) {
+      translations.push(
+        `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`,
+      );
     }
   }
 

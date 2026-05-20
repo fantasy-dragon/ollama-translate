@@ -10,7 +10,6 @@ export function AdvancedSettings() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const latencySeconds = latency != null ? (latency / 1000).toFixed(1) : null;
-
   return (
     <div className="space-y-2">
       <button

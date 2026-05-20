@@ -15,7 +15,9 @@ const translatedMap = new WeakMap<HTMLElement, boolean>();
 
 function isTranslated(el: HTMLElement): boolean {
   return (
-    translatedMap.has(el) || el.querySelector(`.${TRANSLATION_CLASS}`) !== null
+    translatedMap.has(el) ||
+    el.classList.contains(TRANSLATING_CLASS) ||
+    el.querySelector(`.${TRANSLATION_CLASS}`) !== null
   );
 }
 
@@ -40,6 +42,11 @@ function shouldTranslate(el: HTMLElement, settings: Settings): boolean {
 
   const links = el.querySelectorAll("a");
   if (links.length > 3 && text.length / links.length < LINK_DENSITY_THRESHOLD) {
+    return false;
+  }
+
+  // 如果元素包含其他也匹配选择器的子元素，跳过（避免父子双重翻译）
+  if (el.querySelector(settings.textSelector)) {
     return false;
   }
 
@@ -106,9 +113,13 @@ class TranslationQueue {
   }
 
   enqueue(elements: HTMLElement[]): void {
-    // 去重：只添加未在队列中的元素
+    // 去重：跳过已在队列中、正在翻译或已翻译的元素
     for (const el of elements) {
-      if (!this.queue.includes(el)) {
+      if (
+        !this.queue.includes(el) &&
+        !el.classList.contains(TRANSLATING_CLASS) &&
+        !isTranslated(el)
+      ) {
         this.queue.push(el);
       }
     }

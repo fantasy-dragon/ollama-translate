@@ -23,7 +23,6 @@ export const modelsStore = proxy<ModelsStore>({
 });
 
 // ── Actions ──
-
 export const modelsActions = {
   fetch: async () => {
     modelsStore.loading = true;
