@@ -32,8 +32,8 @@ export class ErrorBoundary extends Component<
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="w-[320px] min-h-100 bg-background text-foreground font-sans p-3 overflow-x-hidden flex items-center justify-center">
-          <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4 space-y-3 text-center max-w-70">
+        <div className="w-[320px]  bg-background text-foreground font-sans p-3 overflow-x-hidden flex items-center justify-center">
+          <div className="bg-destructive/10 border border-destructive/20  p-4 space-y-3 text-center max-w-70">
             <div className="flex justify-center">
               <div className="p-2 bg-destructive/20 rounded-full">
                 <AlertTriangle className="w-6 h-6 text-destructive" />

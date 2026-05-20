@@ -20,15 +20,15 @@ function App() {
   if (!settings) {
     return (
       <div className="w-[320px] flex items-center justify-center bg-background">
-        <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-primary/20 border-t-primary  animate-spin" />
       </div>
     );
   }
 
   return (
     <ErrorBoundary>
-      <div className="w-[320px] bg-background text-foreground font-sans overflow-x-hidden">
-        <div className="bg-card rounded-2xl p-4 space-y-5 shadow-xl border-none">
+      <div className="w-[320px]  bg-background text-foreground font-sans overflow-x-hidden">
+        <div className="bg-card p-4 space-y-5 shadow-xl border-none">
           <Header />
           <div className="h-px w-full bg-secondary" />
           <MainControls />
