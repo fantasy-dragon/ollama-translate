@@ -18,15 +18,19 @@ export const DEFAULT_SETTINGS: Settings = {
   enabledDomains: [],
 };
 
+const STORAGE_KEY = "settings";
+
 export async function getSettings(): Promise<Settings> {
-  const stored = await browser.storage.local.get("settings");
-  const settings = stored.settings || {};
-  return { ...DEFAULT_SETTINGS, ...settings };
+  const stored = await browser.storage.local.get(STORAGE_KEY);
+  const settings = stored[STORAGE_KEY];
+  return settings
+    ? { ...DEFAULT_SETTINGS, ...settings }
+    : { ...DEFAULT_SETTINGS };
 }
 
-export async function setSettings(settings: Partial<Settings>): Promise<void> {
+export async function setSettings(update: Partial<Settings>): Promise<void> {
   const current = await getSettings();
   await browser.storage.local.set({
-    settings: { ...current, ...settings },
+    [STORAGE_KEY]: { ...current, ...update },
   });
 }

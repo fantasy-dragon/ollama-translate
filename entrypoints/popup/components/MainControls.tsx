@@ -16,7 +16,7 @@ export function MainControls({
   onUpdateSettings,
 }: MainControlsProps) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.1)] space-y-4">
+    <div className="space-y-4">
       {/* Auto-Translate Functionality (Merged UI) */}
       <div className="space-y-4">
         {/* 1. Current Site Switch */}
@@ -26,10 +26,10 @@ export function MainControls({
               htmlFor="site-translate-toggle"
               className="text-xs font-semibold leading-none cursor-pointer"
             >
-              此网站自动翻译
+              当前网站自动翻译
             </label>
             <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">
-              {currentHostname || "..."}
+              对 {currentHostname || "当前域名"} 启用
             </p>
           </div>
           <button

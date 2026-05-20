@@ -1,5 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   MessageType,
   type TranslationStatusMessage,
@@ -11,18 +11,11 @@ import { Header } from "./components/Header";
 import { MainControls } from "./components/MainControls";
 import "./style.css";
 
-function App() {
+function useSettings() {
   const [settings, setLocalSettings] = useState<Settings | null>(null);
-  const [models, setModels] = useState<string[]>([]);
-  const [loadingModels, setLoadingModels] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [latency, setLatency] = useState<number | null>(null);
-  const [currentHostname, setCurrentHostname] = useState("");
 
   useEffect(() => {
     getSettings().then((s) => {
-      // Fix potential localhost issue
       if (s.ollamaUrl === "http://localhost:11434") {
         const updated = { ...s, ollamaUrl: "http://127.0.0.1:11434" };
         setLocalSettings(updated);
@@ -31,6 +24,25 @@ function App() {
         setLocalSettings(s);
       }
     });
+  }, []);
+
+  const handleUpdate = useCallback(async (update: Partial<Settings>) => {
+    setLocalSettings((prev) => {
+      if (!prev) return prev;
+      const newSettings = { ...prev, ...update };
+      setSettings(update);
+      return newSettings;
+    });
+  }, []);
+
+  return { settings, handleUpdate };
+}
+
+function useTranslationStatus() {
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [latency, setLatency] = useState<number | null>(null);
+
+  useEffect(() => {
     const listener = (message: TranslationStatusMessage) => {
       if (message.type === MessageType.TRANSLATION_STATUS) {
         setIsTranslating(message.status === "translating");
@@ -38,8 +50,16 @@ function App() {
       }
     };
     browser.runtime.onMessage.addListener(listener);
+    return () => browser.runtime.onMessage.removeListener(listener);
+  }, []);
 
-    // Get current tab hostname
+  return { isTranslating, latency };
+}
+
+function useCurrentHostname() {
+  const [currentHostname, setCurrentHostname] = useState("");
+
+  useEffect(() => {
     browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
       if (tab?.url) {
         try {
@@ -50,15 +70,17 @@ function App() {
         }
       }
     });
-
-    return () => browser.runtime.onMessage.removeListener(listener);
   }, []);
 
-  useEffect(() => {
-    if (settings?.ollamaUrl) fetchModels();
-  }, [settings?.ollamaUrl]);
+  return currentHostname;
+}
 
-  const fetchModels = async () => {
+function useModels(ollamaUrl: string | undefined) {
+  const [models, setModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const fetchModels = useCallback(async () => {
     setLoadingModels(true);
     setFetchError(null);
     try {
@@ -76,37 +98,60 @@ function App() {
     } finally {
       setLoadingModels(false);
     }
-  };
+  }, []);
 
-  const handleUpdate = async (update: Partial<Settings>) => {
-    if (!settings) return;
-    const newSettings = { ...settings, ...update };
-    setLocalSettings(newSettings);
-    await setSettings(update);
-  };
+  useEffect(() => {
+    if (ollamaUrl) fetchModels();
+  }, [ollamaUrl, fetchModels]);
 
-  const isCurrentSiteEnabled = settings
-    ? settings.enabledDomains.some(
-        (d) => currentHostname === d || currentHostname.endsWith(`.${d}`),
-      )
-    : false;
+  return { models, loadingModels, fetchError, fetchModels };
+}
 
-  const toggleCurrentSite = () => {
+function useSiteToggle(
+  settings: Settings | null,
+  currentHostname: string,
+  onUpdateSettings: (update: Partial<Settings>) => void,
+) {
+  const isCurrentSiteEnabled = useMemo(
+    () =>
+      settings
+        ? settings.enabledDomains.some(
+            (d) => currentHostname === d || currentHostname.endsWith(`.${d}`),
+          )
+        : false,
+    [settings, currentHostname],
+  );
+
+  const toggleCurrentSite = useCallback(() => {
     if (!settings || !currentHostname) return;
     if (isCurrentSiteEnabled) {
-      // Disable: Remove from enabled
-      handleUpdate({
+      onUpdateSettings({
         enabledDomains: settings.enabledDomains.filter(
           (d) => !(currentHostname === d || currentHostname.endsWith(`.${d}`)),
         ),
       });
     } else {
-      // Enable: Add to enabled
-      handleUpdate({
+      onUpdateSettings({
         enabledDomains: [...settings.enabledDomains, currentHostname],
       });
     }
-  };
+  }, [settings, currentHostname, isCurrentSiteEnabled, onUpdateSettings]);
+
+  return { isCurrentSiteEnabled, toggleCurrentSite };
+}
+
+function App() {
+  const { settings, handleUpdate } = useSettings();
+  const { isTranslating, latency } = useTranslationStatus();
+  const currentHostname = useCurrentHostname();
+  const { models, loadingModels, fetchError, fetchModels } = useModels(
+    settings?.ollamaUrl,
+  );
+  const { isCurrentSiteEnabled, toggleCurrentSite } = useSiteToggle(
+    settings,
+    currentHostname,
+    handleUpdate,
+  );
 
   if (!settings) {
     return (
@@ -117,40 +162,36 @@ function App() {
   }
 
   return (
-    <div className="w-[320px] min-h-[400px] bg-background text-foreground font-sans p-4 space-y-4 overflow-x-hidden">
-      <Header
-        isTranslating={isTranslating}
-        loadingModels={loadingModels}
-        onFetchModels={fetchModels}
-      />
+    <div className="w-[320px] min-h-[400px] bg-background text-foreground font-sans p-3 overflow-x-hidden">
+      <div className="bg-card rounded-2xl p-4 space-y-5 shadow-xl border-none">
+        <Header
+          isTranslating={isTranslating}
+          loadingModels={loadingModels}
+          onFetchModels={fetchModels}
+        />
 
-      <MainControls
-        settings={settings}
-        currentHostname={currentHostname}
-        isCurrentSiteEnabled={isCurrentSiteEnabled}
-        onToggleCurrentSite={toggleCurrentSite}
-        onUpdateSettings={handleUpdate}
-      />
+        <div className="h-[1px] w-full bg-secondary" />
 
-      <AISettings
-        settings={settings}
-        models={models}
-        onUpdateSettings={handleUpdate}
-      />
+        <MainControls
+          settings={settings}
+          currentHostname={currentHostname}
+          isCurrentSiteEnabled={isCurrentSiteEnabled}
+          onToggleCurrentSite={toggleCurrentSite}
+          onUpdateSettings={handleUpdate}
+        />
 
-      <AdvancedSettings
-        settings={settings}
-        onUpdateSettings={handleUpdate}
-      />
+        <AISettings
+          settings={settings}
+          models={models}
+          onUpdateSettings={handleUpdate}
+        />
 
-      <footer className="pt-2 border-t border-border flex items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-muted-foreground">Latency</span>
-          <span className="text-xs font-semibold">
-            {latency ? `${latency}ms` : "--"}
-          </span>
-        </div>
-      </footer>
+        <AdvancedSettings
+          settings={settings}
+          latency={latency}
+          onUpdateSettings={handleUpdate}
+        />
+      </div>
 
       {fetchError && (
         <div className="relative p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2">
