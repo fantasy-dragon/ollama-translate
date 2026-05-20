@@ -1,47 +1,83 @@
+/* ── CSS Custom Properties for theming ── */
+.ollama-translation-wrap {
+  --ot-color: #6366f1;
+  --ot-bg: rgba(99, 102, 241, 0.06);
+  --ot-border: rgba(99, 102, 241, 0.35);
+  --ot-text: #4f46e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ollama-translation-wrap {
+    --ot-color: #818cf8;
+    --ot-bg: rgba(129, 140, 248, 0.08);
+    --ot-border: rgba(129, 140, 248, 0.3);
+    --ot-text: #a5b4fc;
+  }
+}
+
+/* ── Translation Result ── */
 .ollama-translation-wrap {
   display: block;
-  margin-top: 4px;
-  margin-bottom: 4px;
-  font-size: 0.9em;
-  color: #6366f1; /* Indigo-500 */
-  line-height: 1.5;
-  border-left: 3px solid #6366f1;
-  padding-left: 10px;
-  font-style: italic;
-  opacity: 0.9;
-  animation: ollama-fade-in 0.5s ease-out;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding: 6px 10px 6px 12px;
+  font-size: 0.875em;
+  line-height: 1.6;
+  color: var(--ot-text);
+  background: var(--ot-bg);
+  border-left: 2.5px solid var(--ot-border);
+  border-radius: 0 6px 6px 0;
+  opacity: 0.95;
+  animation: ollama-fade-in 0.35s ease-out;
+  position: relative;
+}
+
+/* AI translation badge */
+.ollama-translation-wrap::before {
+  content: "AI";
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ot-border);
+  opacity: 0.6;
 }
 
 @keyframes ollama-fade-in {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(4px);
   }
   to {
-    opacity: 0.9;
+    opacity: 0.95;
     transform: translateY(0);
   }
 }
 
+/* ── Translating Indicator ── */
 .ollama-translating {
   position: relative;
 }
 
 .ollama-translating::after {
-  content: "Translating...";
+  content: "翻译中...";
   display: block;
   font-size: 0.75em;
   color: #94a3b8;
-  margin-top: 2px;
-  animation: ollama-pulse 1.5s infinite;
+  margin-top: 3px;
+  padding-left: 2px;
+  animation: ollama-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ollama-translating::after {
+    color: #64748b;
+  }
 }
 
 @keyframes ollama-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
 }
