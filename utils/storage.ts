@@ -1,7 +1,6 @@
 export interface Settings {
   ollamaUrl: string;
   model: string;
-  targetLanguage: string;
   autoTranslate: boolean;
   minTextLength: number;
   batchSize: number;
@@ -11,7 +10,6 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   ollamaUrl: "http://127.0.0.1:11434",
   model: "qwen2.5:7b",
-  targetLanguage: "中文",
   autoTranslate: false,
   minTextLength: 20,
   batchSize: 1,

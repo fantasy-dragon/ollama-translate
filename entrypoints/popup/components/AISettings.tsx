@@ -1,17 +1,6 @@
 import { ChevronDown } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import type { Settings } from "../../../utils/storage";
-
-const COMMON_LANGUAGES = [
-  "中文",
-  "English",
-  "日本語",
-  "한국어",
-  "Français",
-  "Deutsch",
-  "Español",
-  "Русский",
-];
 
 interface AISettingsProps {
   settings: Settings;
@@ -20,7 +9,7 @@ interface AISettingsProps {
 }
 
 function ModelSelector({
-  models,
+  models, 
   selectedModel,
   onSelect,
 }: {
@@ -29,7 +18,9 @@ function ModelSelector({
   onSelect: (model: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+
   const modelButtonId = "model-select-button";
+
 
   return (
     <div className="space-y-2">
@@ -95,88 +86,6 @@ function ModelSelector({
   );
 }
 
-function LanguageSelector({
-  targetLanguage,
-  onSelect,
-}: {
-  targetLanguage: string;
-  onSelect: (lang: string) => void;
-}) {
-  const [isFocused, setIsFocused] = useState(false);
-  const [search, setSearch] = useState("");
-  const searchInputId = "language-search-input";
-
-  const filteredLangs = useMemo(
-    () =>
-      COMMON_LANGUAGES.filter((l) =>
-        l.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [search],
-  );
-
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-    setSearch("");
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    setTimeout(() => setIsFocused(false), 200);
-  }, []);
-
-  const handleSelect = useCallback(
-    (lang: string) => {
-      onSelect(lang);
-      setIsFocused(false);
-    },
-    [onSelect],
-  );
-
-  return (
-    <div className="space-y-2">
-      <label
-        htmlFor={searchInputId}
-        className="text-xs font-medium text-muted-foreground"
-      >
-        目标语言
-      </label>
-      <div className="relative group">
-        <input
-          id={searchInputId}
-          type="text"
-          value={isFocused ? search : targetLanguage}
-          onChange={(e) => setSearch(e.target.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          className="w-full pl-3 pr-9 py-2 bg-secondary border-none rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-          placeholder="搜索语言..."
-        />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity pointer-events-none">
-          <ChevronDown className="w-3.5 h-3.5" />
-        </div>
-        {isFocused && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 bg-secondary border-none rounded-lg shadow-xl z-50 max-h-[160px] overflow-y-auto p-1">
-            {filteredLangs.length > 0 ? (
-              filteredLangs.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => handleSelect(l)}
-                  className="w-full px-2 py-1.5 text-xs rounded-md hover:bg-accent text-left"
-                >
-                  {l}
-                </button>
-              ))
-            ) : (
-              <div className="p-2 text-xs text-muted-foreground text-center">
-                无结果
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export function AISettings({
   settings,
@@ -189,10 +98,6 @@ export function AISettings({
         models={models}
         selectedModel={settings.model}
         onSelect={(model) => onUpdateSettings({ model })}
-      />
-      <LanguageSelector
-        targetLanguage={settings.targetLanguage}
-        onSelect={(lang) => onUpdateSettings({ targetLanguage: lang })}
       />
     </div>
   );
