@@ -28,7 +28,7 @@ export function MainControls({
             >
               当前网站自动翻译
             </label>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+            <p className="text-[10px] text-muted-foreground truncate max-w-45">
               对 {currentHostname || "当前域名"} 启用
             </p>
           </div>

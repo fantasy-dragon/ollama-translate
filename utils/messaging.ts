@@ -38,3 +38,26 @@ export type ExtensionMessage =
   | TranslateRequest
   | FetchModelsRequest
   | TranslationStatusMessage;
+
+/**
+ * 运行时消息发送的响应类型映射
+ * 用于类型安全的 browser.runtime.sendMessage
+ */
+export interface MessageResponseMap {
+  [MessageType.TRANSLATE]: TranslateResponse;
+  [MessageType.FETCH_MODELS]: FetchModelsResponse;
+  [MessageType.TRANSLATION_STATUS]: undefined;
+}
+
+/**
+ * 类型安全的 sendMessage 封装
+ */
+export async function sendExtensionMessage<T extends MessageType>(
+  type: T,
+  payload?: Omit<
+    Extract<ExtensionMessage, { type: T }>,
+    "type"
+  >,
+): Promise<MessageResponseMap[T]> {
+  return browser.runtime.sendMessage({ type, ...payload });
+}

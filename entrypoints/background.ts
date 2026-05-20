@@ -1,13 +1,20 @@
 import {
   type FetchModelsResponse,
   MessageType,
+  sendExtensionMessage,
   type TranslateResponse,
 } from "../utils/messaging";
+import { buildBatchPrompt, parseBatchResponse } from "../utils/prompts";
+import { withRetry } from "../utils/retry";
+import {
+  filterCached,
+  setCachedTranslation,
+  translationCache,
+} from "../utils/cache";
 import { getSettings } from "../utils/storage";
 
 function sendStatus(status: "translating" | "idle", latency?: number) {
-  browser.runtime
-    .sendMessage({ type: MessageType.TRANSLATION_STATUS, status, latency })
+  sendExtensionMessage(MessageType.TRANSLATION_STATUS, { status, latency })
     .catch(() => {});
 }
 
@@ -24,11 +31,26 @@ async function ollamaFetch<T>(path: string, body?: object): Promise<T> {
   const baseUrl = normalizeUrl(settings.ollamaUrl);
   const url = `${baseUrl}${path}`;
 
-  const response = await fetch(url, {
-    method: body ? "POST" : "GET",
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const response = await withRetry(
+    () =>
+      fetch(url, {
+        method: body ? "POST" : "GET",
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    {
+      maxRetries: 2,
+      baseDelayMs: 1000,
+      shouldRetry: (error) => {
+        // 网络错误（TypeError）或 5xx 服务端错误可重试
+        if (error instanceof TypeError) return true;
+        if (error instanceof Response) {
+          return error.status >= 500;
+        }
+        return true;
+      },
+    },
+  );
 
   if (!response.ok) {
     let errorMsg = response.statusText;
@@ -43,19 +65,6 @@ async function ollamaFetch<T>(path: string, body?: object): Promise<T> {
 
   return response.json() as Promise<T>;
 }
-
-const TRANSLATION_PROMPT = `
-你是一位精通科技与通俗文学的顶级英中翻译专家。请将用户输入的英文文本翻译为地道、流畅的中文。
-规则：
-
-彻底摆脱"翻译腔"，禁止直译。请根据中文的表达习惯和语序进行润色和意译。
-
-保持专业术语的准确性，科技/行业专有名词如无标准通用翻译，请保留原文或在括号中注明。
-
-严格保留原文的 Markdown 格式、代码块及段落结构。
-
-严禁输出任何多余的寒暄、解释或前言，直接输出翻译后的中文结果。
-`;
 
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -80,18 +89,50 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const startTime = Date.now();
   sendStatus("translating");
 
-  const translations: string[] = [];
+  // 1. 检查缓存
+  const { uncached, cachedTranslations } = filterCached(texts, settings.model);
 
-  for (const text of texts) {
-    try {
-      const data = await ollamaFetch<{ response: string }>("/api/generate", {
-        model: settings.model,
-        prompt: `${TRANSLATION_PROMPT}\n文本内容: ${text}`,
-        stream: false,
-      });
-      translations.push(data.response.trim());
-    } catch (error: unknown) {
-      translations.push(`翻译失败 (网络或服务错误: ${getErrorMessage(error)})`);
+  // 如果全部命中缓存，直接返回
+  if (uncached.length === 0) {
+    const translations = texts.map((_, i) => cachedTranslations.get(i) ?? "");
+    sendStatus("idle", Date.now() - startTime);
+    return { translations };
+  }
+
+  // 2. 批量翻译未缓存的文本
+  let batchResults: string[];
+  try {
+    const prompt = buildBatchPrompt(uncached);
+    const data = await ollamaFetch<{ response: string }>("/api/generate", {
+      model: settings.model,
+      prompt,
+      stream: false,
+    });
+    batchResults = parseBatchResponse(data.response.trim(), uncached.length);
+  } catch (error: unknown) {
+    sendStatus("idle", Date.now() - startTime);
+    return {
+      translations: texts.map(
+        () => `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`,
+      ),
+    };
+  }
+
+  // 3. 写入缓存
+  for (let i = 0; i < uncached.length; i++) {
+    setCachedTranslation(uncached[i], settings.model, batchResults[i]);
+  }
+
+  // 4. 按原始顺序组装结果
+  const translations: string[] = [];
+  let uncachedIndex = 0;
+  for (let i = 0; i < texts.length; i++) {
+    const cached = cachedTranslations.get(i);
+    if (cached !== undefined) {
+      translations.push(cached);
+    } else {
+      translations.push(batchResults[uncachedIndex] ?? "");
+      uncachedIndex++;
     }
   }
 

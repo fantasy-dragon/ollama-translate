@@ -1,6 +1,7 @@
 import "@/assets/content.css";
-import { MessageType } from "../utils/messaging";
+import { MessageType, sendExtensionMessage } from "../utils/messaging";
 import { type Settings, getSettings } from "../utils/storage";
+import { getCachedTranslation } from "../utils/cache";
 
 const TRANSLATION_CLASS = "ollama-translation-wrap";
 const TRANSLATING_CLASS = "ollama-translating";
@@ -19,6 +20,9 @@ const EXCLUDED_TAGS = new Set([
 const MUTATION_DEBOUNCE_MS = 500;
 const MIN_TEXT_LENGTH = 20;
 const LINK_DENSITY_THRESHOLD = 50;
+
+/** 队列处理 debounce 时间（毫秒） */
+const QUEUE_DEBOUNCE_MS = 300;
 
 const translatedMap = new WeakMap<HTMLElement, boolean>();
 
@@ -68,29 +72,6 @@ function setTranslationVisibility(visible: boolean) {
   }
 }
 
-async function translateElements(elements: HTMLElement[]) {
-  const texts = elements.map((el) => el.innerText.trim());
-  setElementsClass(elements, TRANSLATING_CLASS, true);
-
-  try {
-    const response = await browser.runtime.sendMessage({
-      type: MessageType.TRANSLATE,
-      texts,
-    });
-
-    if (response?.translations) {
-      for (let i = 0; i < elements.length; i++) {
-        const el = elements[i];
-        el.classList.remove(TRANSLATING_CLASS);
-        injectTranslation(el, response.translations[i]);
-        translatedMap.set(el, true);
-      }
-    }
-  } catch {
-    setElementsClass(elements, TRANSLATING_CLASS, false);
-  }
-}
-
 function injectTranslation(el: HTMLElement, translation: string) {
   if (el.querySelector(`.${TRANSLATION_CLASS}`)) return;
 
@@ -106,6 +87,118 @@ function isDomainEnabled(settings: Settings, hostname: string): boolean {
   );
 }
 
+// ── 翻译队列 ──────────────────────────────────────────────
+
+/**
+ * 带 debounce 的翻译队列
+ * 在短时间内收集待翻译元素，统一批量发送
+ */
+class TranslationQueue {
+  private queue: HTMLElement[] = [];
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private processing = false;
+  private modelCache = new Map<string, string>();
+
+  /** 更新模型缓存（从 background 获取的翻译结果） */
+  updateModelCache(text: string, translation: string): void {
+    this.modelCache.set(text, translation);
+  }
+
+  enqueue(elements: HTMLElement[]): void {
+    // 去重：只添加未在队列中的元素
+    for (const el of elements) {
+      if (!this.queue.includes(el)) {
+        this.queue.push(el);
+      }
+    }
+    this.scheduleFlush();
+  }
+
+  private scheduleFlush(): void {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.flush(), QUEUE_DEBOUNCE_MS);
+  }
+
+  private async flush(): Promise<void> {
+    if (this.processing || this.queue.length === 0) return;
+    this.processing = true;
+
+    const batch = this.queue.splice(0);
+    this.timer = null;
+
+    // 先检查本地缓存
+    const toTranslate: HTMLElement[] = [];
+    const texts: string[] = [];
+    const localResults = new Map<number, string>();
+
+    for (let i = 0; i < batch.length; i++) {
+      const el = batch[i];
+      const text = el.innerText.trim();
+      // 检查运行时的 modelCache
+      const cached = this.modelCache.get(text);
+      if (cached) {
+        localResults.set(i, cached);
+      } else {
+        toTranslate.push(el);
+        texts.push(text);
+      }
+    }
+
+    // 应用本地缓存的结果
+    for (const [idx, translation] of localResults) {
+      const el = batch[idx];
+      el.classList.remove(TRANSLATING_CLASS);
+      injectTranslation(el, translation);
+      translatedMap.set(el, true);
+    }
+
+    // 发送未缓存的到 background 翻译
+    if (toTranslate.length > 0) {
+      setElementsClass(toTranslate, TRANSLATING_CLASS, true);
+
+      try {
+        const response = await sendExtensionMessage(MessageType.TRANSLATE, {
+          texts,
+        });
+
+        if (response?.translations) {
+          for (let i = 0; i < toTranslate.length; i++) {
+            const el = toTranslate[i];
+            el.classList.remove(TRANSLATING_CLASS);
+            const translation = response.translations[i];
+            if (translation) {
+              injectTranslation(el, translation);
+              translatedMap.set(el, true);
+              // 写本地缓存
+              this.modelCache.set(texts[i], translation);
+            }
+          }
+        }
+      } catch {
+        setElementsClass(toTranslate, TRANSLATING_CLASS, false);
+      }
+    }
+
+    this.processing = false;
+
+    // 如果队列中又有新元素，继续处理
+    if (this.queue.length > 0) {
+      this.scheduleFlush();
+    }
+  }
+
+  destroy(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.queue = [];
+    this.modelCache.clear();
+  }
+}
+
+// ── 内容脚本主逻辑 ────────────────────────────────────────
+
 export default defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "manifest",
@@ -115,6 +208,7 @@ export default defineContentScript({
     let mutationTimeout: ReturnType<typeof setTimeout>;
 
     const hostname = window.location.hostname.toLowerCase();
+    const translationQueue = new TranslationQueue();
 
     const start = () => {
       if (observer) return;
@@ -132,7 +226,7 @@ export default defineContentScript({
             }
           }
           if (toTranslate.length > 0) {
-            translateElements(toTranslate);
+            translationQueue.enqueue(toTranslate);
           }
         },
         { threshold: 0.1 },
@@ -159,6 +253,7 @@ export default defineContentScript({
       observer = null;
       mutationObserver?.disconnect();
       mutationObserver = null;
+      translationQueue.destroy();
       setTranslationVisibility(false);
     };
 

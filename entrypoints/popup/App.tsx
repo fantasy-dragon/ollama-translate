@@ -155,14 +155,14 @@ function App() {
 
   if (!settings) {
     return (
-      <div className="w-[320px] h-[400px] flex items-center justify-center bg-background">
+      <div className="w-[320px] h-100 flex items-center justify-center bg-background">
         <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="w-[320px] min-h-[400px] bg-background text-foreground font-sans p-3 overflow-x-hidden">
+    <div className="w-[320px] min-h-100 bg-background text-foreground font-sans p-3 overflow-x-hidden">
       <div className="bg-card rounded-2xl p-4 space-y-5 shadow-xl border-none">
         <Header
           isTranslating={isTranslating}
@@ -170,7 +170,7 @@ function App() {
           onFetchModels={fetchModels}
         />
 
-        <div className="h-[1px] w-full bg-secondary" />
+        <div className="h-px w-full bg-secondary" />
 
         <MainControls
           settings={settings}
@@ -194,7 +194,7 @@ function App() {
       </div>
 
       {fetchError && (
-        <div className="relative p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2">
+        <div className="relative p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3 animate-in slide-in-from-bottom-2">
           <div className="p-1 bg-destructive/20 rounded text-destructive mt-0.5">
             <AlertCircle className="w-3 h-3" strokeWidth={3} />
           </div>

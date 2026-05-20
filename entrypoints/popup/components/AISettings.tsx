@@ -44,7 +44,7 @@ function ModelSelector({
           onClick={() => setIsOpen((prev) => !prev)}
           className="w-full flex items-center justify-between px-3 py-2 bg-secondary border-none rounded-lg text-xs hover:brightness-110 transition-all group focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
-          <span className="truncate max-w-[180px]">
+          <span className="truncate max-w-45">
             {selectedModel || "选择模型..."}
           </span>
           <ChevronDown
@@ -55,7 +55,7 @@ function ModelSelector({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 bg-secondary border-none rounded-lg shadow-xl z-50 max-h-[160px] overflow-y-auto p-1 animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-secondary border-none rounded-lg shadow-xl z-50 max-h-40 overflow-y-auto p-1 animate-in zoom-in-95 duration-100">
             {models.length > 0 ? (
               models.map((m) => (
                 <button
