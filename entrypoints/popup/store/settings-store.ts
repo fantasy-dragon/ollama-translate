@@ -4,11 +4,11 @@
  * 管理：
  * - 用户设置（ollamaUrl, model, textSelector 等）
  * - 当前标签页 hostname
- * - 派生：当前站点是否启用自动翻译（支持白名单/黑名单模式）
+ * - 派生：当前站点是否在白名单中（启用自动翻译）
  */
 import { proxy } from "valtio";
-import { type Settings, type ListMode, getSettings, setSettings } from "../../../utils/storage";
-import { modelsActions } from "./models-store";
+import { type Settings, getSettings, setSettings } from "../../../utils/storage";
+
 // ── 辅助函数 ──
 
 /** 判断 hostname 是否匹配列表中的某个域名（支持子域名匹配） */
@@ -16,23 +16,21 @@ function matchDomain(hostname: string, domain: string): boolean {
   return hostname === domain || hostname.endsWith(`.${domain}`);
 }
 
-/** 根据 listMode 和 domainList 判断站点是否应自动翻译 */
-function isSiteEnabled(
+/** 判断站点是否在白名单中 */
+function isSiteInWhitelist(
   hostname: string,
-  listMode: ListMode,
   domainList: readonly string[],
 ): boolean {
-  const inList = domainList.some((d) => matchDomain(hostname, d));
-  return listMode === "whitelist" ? inList : !inList;
+  return domainList.some((d) => matchDomain(hostname, d));
 }
 
 // ── State ──
 interface SettingsStore {
   data: Settings | null;
   currentHostname: string;
-  /** 当前站点是否启用自动翻译（根据 listMode + domainList 计算） */
+  /** 当前站点是否在白名单中（启用自动翻译） */
   isCurrentSiteEnabled: boolean;
-  /** 当前站点是否在 domainList 中（不考虑模式） */
+  /** 当前站点是否在 domainList 中 */
   isCurrentSiteInList: boolean;
 }
 
@@ -41,9 +39,8 @@ export const settingsStore = proxy<SettingsStore>({
   currentHostname: "",
   get isCurrentSiteEnabled() {
     if (!this.data || !this.currentHostname) return false;
-    return isSiteEnabled(
+    return isSiteInWhitelist(
       this.currentHostname,
-      this.data.listMode,
       this.data.domainList,
     );
   },
@@ -71,23 +68,9 @@ export const settingsActions = {
 
   updateSettings: async (update: Partial<Settings>) => {
     if (!settingsStore.data) return;
-    const prevUrl = settingsStore.data.ollamaUrl;
     const newSettings = { ...settingsStore.data, ...update };
     settingsStore.data = newSettings as Settings;
     await setSettings(update);
-
-    // Ollama 地址变化时重新拉取模型列表
-    if (update.ollamaUrl && update.ollamaUrl !== prevUrl) {
-      modelsActions.fetch();
-    }
-  },
-
-  /** 切换 listMode（whitelist ↔ blacklist） */
-  toggleListMode: () => {
-    if (!settingsStore.data) return;
-    const newMode: ListMode =
-      settingsStore.data.listMode === "whitelist" ? "blacklist" : "whitelist";
-    settingsActions.updateSettings({ listMode: newMode });
   },
 
   queryCurrentTab: async () => {

@@ -1,8 +1,7 @@
 import {
-  type FetchModelsResponse,
+  type TranslateResponse,
   MessageType,
   sendExtensionMessage,
-  type TranslateResponse,
 } from "../utils/messaging";
 import { buildTranslatePrompt } from "../utils/prompts";
 import { withRetry } from "../utils/retry";
@@ -71,11 +70,6 @@ export default defineBackground(() => {
       handleTranslate(message.texts).then(sendResponse);
       return true;
     }
-
-    if (message.type === MessageType.FETCH_MODELS) {
-      handleFetchModels().then(sendResponse);
-      return true;
-    }
   });
 });
 
@@ -118,13 +112,4 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
 
   sendStatus("idle", Date.now() - startTime);
   return { translations };
-}
-
-async function handleFetchModels(): Promise<FetchModelsResponse> {
-  try {
-    const data = await ollamaFetch<{ models: { name: string }[] }>("/api/tags");
-    return { models: (data.models || []).map((m) => m.name) };
-  } catch (error: unknown) {
-    return { models: [], error: getErrorMessage(error) };
-  }
 }

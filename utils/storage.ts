@@ -1,14 +1,10 @@
-export type ListMode = "whitelist" | "blacklist";
-
 export interface Settings {
   ollamaUrl: string;
   model: string;
   autoTranslate: boolean;
   minTextLength: number;
   batchSize: number;
-  /** 域名列表模式：whitelist（仅翻译列表中的域名）| blacklist（不翻译列表中的域名） */
-  listMode: ListMode;
-  /** 域名列表（根据 listMode 决定是白名单还是黑名单） */
+  /** 白名单域名列表：仅翻译列表中的域名 */
   domainList: readonly string[];
   /** 已启用自动翻译的域名列表（兼容旧版，映射到 domainList） */
   enabledDomains: readonly string[];
@@ -24,7 +20,6 @@ export const DEFAULT_SETTINGS: Settings = {
   autoTranslate: false,
   minTextLength: 20,
   batchSize: 1,
-  listMode: "whitelist",
   domainList: [],
   enabledDomains: [],
   textSelector: "p, h1, h2, h3, h4, h5, h6, li, article div",

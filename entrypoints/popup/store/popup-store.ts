@@ -6,23 +6,16 @@
  */
 import { settingsStore, settingsActions } from "./settings-store";
 import { translationActions } from "./translation-store";
-import { modelsActions } from "./models-store";
-
 
 // 重新导出，方便组件统一引入
 export { settingsStore, settingsActions } from "./settings-store";
 export { translationStore, translationActions } from "./translation-store";
-export { modelsStore, modelsActions } from "./models-store";
 
 /**
- * 应用初始化：加载设置 → 查询当前标签页 → 监听翻译状态 → 拉取模型
+ * 应用初始化：加载设置 → 查询当前标签页 → 监听翻译状态
  */
 export async function initApp(): Promise<void> {
   await settingsActions.loadSettings();
   await settingsActions.queryCurrentTab();
   translationActions.listen();
-
-  if (settingsStore.data?.ollamaUrl) {
-    await modelsActions.fetch();
-  }
 }

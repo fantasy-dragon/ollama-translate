@@ -1,11 +1,9 @@
-import { Languages, RefreshCw } from "lucide-react";
+import { Languages } from "lucide-react";
 import { useSnapshot } from "valtio";
 import { translationStore } from "../store/translation-store";
-import { modelsStore, modelsActions } from "../store/models-store";
 
 export function Header() {
   const { isTranslating } = useSnapshot(translationStore);
-  const { loading } = useSnapshot(modelsStore);
   
   return (
     <header className="flex items-center justify-between mb-2">
@@ -17,7 +15,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-1">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-secondary text-[10px] font-medium border border-border mr-1">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-secondary text-[10px] font-medium border border-border">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
               isTranslating ? "bg-primary animate-pulse" : "bg-green-500"
@@ -27,17 +25,6 @@ export function Header() {
             {isTranslating ? "翻译中" : "在线"}
           </span>
         </div>
-
-        <button
-          type="button"
-          onClick={modelsActions.fetch}
-          className={`p-1.5 hover:bg-secondary rounded-md transition-colors ${
-            loading ? "animate-spin" : ""
-          }`}
-          title="同步状态"
-        >
-          <RefreshCw className="w-4 h-4 opacity-60" />
-        </button>
       </div>
     </header>
   );

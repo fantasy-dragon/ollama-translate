@@ -3,12 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { useSnapshot } from "valtio";
 import { settingsStore, settingsActions } from "../store/settings-store";
 import { translationStore } from "../store/translation-store";
-import type { ListMode } from "../../../utils/storage";
-
-const LIST_MODE_LABELS: Record<ListMode, string> = {
-  whitelist: "白名单",
-  blacklist: "黑名单",
-};
 
 function DomainListManager() {
   const { data: settings } = useSnapshot(settingsStore);
@@ -24,7 +18,6 @@ function DomainListManager() {
 
   if (!settings) return null;
 
-  const mode = settings.listMode;
   const domainList = settings.domainList;
 
   const handleAdd = () => {
@@ -45,7 +38,7 @@ function DomainListManager() {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {LIST_MODE_LABELS[mode]}域名 ({domainList.length})
+          白名单域名 ({domainList.length})
         </span>
         <button
           type="button"
@@ -107,7 +100,7 @@ function DomainListManager() {
                 type="button"
                 onClick={() => settingsActions.removeDomain(domain)}
                 className="p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                title={`从${LIST_MODE_LABELS[mode]}移除`}
+                title="从白名单移除"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -116,9 +109,7 @@ function DomainListManager() {
         </div>
       ) : (
         <p className="text-[10px] text-muted-foreground italic">
-          {mode === "whitelist"
-            ? "尚未添加任何域名，所有网站均不会自动翻译"
-            : "尚未添加任何域名，所有网站均会自动翻译"}
+          尚未添加任何域名，所有网站均不会自动翻译
         </p>
       )}
     </div>

@@ -102,12 +102,9 @@ function injectTranslation(el: HTMLElement, translation: string) {
 }
 
 function isDomainEnabled(settings: Settings, hostname: string): boolean {
-  const inList = settings.domainList.some(
+  return settings.domainList.some(
     (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
   );
-  // whitelist: 只在列表中的域名启用翻译
-  // blacklist: 不在列表中的域名启用翻译（默认黑名单模式下列表为空，所有站点启用）
-  return settings.listMode === "whitelist" ? inList : !inList;
 }
 
 // ── 翻译队列 ──────────────────────────────────────────────
