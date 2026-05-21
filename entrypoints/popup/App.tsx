@@ -17,6 +17,8 @@ function App() {
     initApp();
   }, []);
 
+
+
   if (!settings) {
     return (
       <div className="w-[320px] flex items-center justify-center bg-background">

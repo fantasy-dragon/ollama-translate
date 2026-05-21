@@ -16,7 +16,6 @@ function matchDomain(hostname: string, domain: string): boolean {
   return hostname === domain || hostname.endsWith(`.${domain}`);
 }
 
-
 /** 根据 listMode 和 domainList 判断站点是否应自动翻译 */
 function isSiteEnabled(
   hostname: string,
@@ -26,7 +25,6 @@ function isSiteEnabled(
   const inList = domainList.some((d) => matchDomain(hostname, d));
   return listMode === "whitelist" ? inList : !inList;
 }
-
 
 // ── State ──
 interface SettingsStore {
