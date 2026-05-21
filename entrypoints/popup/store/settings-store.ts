@@ -58,7 +58,6 @@ export const settingsStore = proxy<SettingsStore>({
 });
 
 // ── Actions ──
-
 export const settingsActions = {
   loadSettings: async () => {
     const s = await getSettings();
@@ -71,7 +70,7 @@ export const settingsActions = {
       settingsStore.data = s;
     }
   },
-
+  
   updateSettings: async (update: Partial<Settings>) => {
     if (!settingsStore.data) return;
     const prevUrl = settingsStore.data.ollamaUrl;

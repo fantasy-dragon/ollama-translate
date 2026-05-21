@@ -6,7 +6,7 @@ import { modelsStore, modelsActions } from "../store/models-store";
 export function Header() {
   const { isTranslating } = useSnapshot(translationStore);
   const { loading } = useSnapshot(modelsStore);
-
+  
   return (
     <header className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-2">

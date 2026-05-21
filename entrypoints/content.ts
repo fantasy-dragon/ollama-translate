@@ -16,6 +16,8 @@ const translatedMap = new WeakMap<HTMLElement, boolean>();
 function isTranslated(el: HTMLElement): boolean {
   return (
     translatedMap.has(el) ||
+    // 标记属性更可靠（在某些 DOM 变化下 WeakMap 可能失效）
+    (el.dataset && el.dataset.ollamaTranslated === "1") ||
     el.classList.contains(TRANSLATING_CLASS) ||
     el.querySelector(`.${TRANSLATION_CLASS}`) !== null
   );
@@ -34,6 +36,10 @@ function buildExcludedTags(settings: Settings): Set<string> {
 }
 
 function shouldTranslate(el: HTMLElement, settings: Settings): boolean {
+  // 正在翻译中或已翻译的元素，跳过
+  if (el.classList.contains(TRANSLATING_CLASS)) return false;
+  if (isTranslated(el)) return false;
+
   const text = el.innerText.trim();
   if (text.length < settings.minTextLength) return false;
 
@@ -81,12 +87,18 @@ function setTranslationVisibility(visible: boolean) {
 }
 
 function injectTranslation(el: HTMLElement, translation: string) {
-  if (el.querySelector(`.${TRANSLATION_CLASS}`)) return;
+  if (el.querySelector(`.${TRANSLATION_CLASS}`) || (el.dataset && el.dataset.ollamaTranslated === "1")) return;
 
   const wrap = document.createElement("div");
   wrap.className = TRANSLATION_CLASS;
   wrap.innerText = translation;
   el.appendChild(wrap);
+  // 标记已注入，防止在 DOM 变动或节点替换时被重复翻译
+  try {
+    if (el.dataset) el.dataset.ollamaTranslated = "1";
+  } catch {
+    // ignore
+  }
 }
 
 function isDomainEnabled(settings: Settings, hostname: string): boolean {
@@ -165,6 +177,9 @@ class TranslationQueue {
       el.classList.remove(TRANSLATING_CLASS);
       injectTranslation(el, translation);
       translatedMap.set(el, true);
+      try {
+        if (el.dataset) el.dataset.ollamaTranslated = "1";
+      } catch {}
     }
 
     // 发送未缓存的到 background 翻译
@@ -184,6 +199,9 @@ class TranslationQueue {
             if (translation) {
               injectTranslation(el, translation);
               translatedMap.set(el, true);
+              try {
+                if (el.dataset) el.dataset.ollamaTranslated = "1";
+              } catch {}
               // 写本地缓存
               this.modelCache.set(texts[i], translation);
             }
@@ -200,6 +218,11 @@ class TranslationQueue {
     if (this.queue.length > 0) {
       this.scheduleFlush();
     }
+  }
+
+  /** 是否正在处理翻译请求 */
+  isProcessing(): boolean {
+    return this.processing;
   }
 
   destroy(): void {
@@ -253,10 +276,36 @@ export default defineContentScript({
 
       startObserving(observer, currentSettings);
 
-      mutationObserver = new MutationObserver(() => {
+      mutationObserver = new MutationObserver((mutations) => {
+        // 过滤掉仅由翻译注入产生的 DOM 变动，避免反馈循环
+        const hasForeignMutation = mutations.some((m) => {
+          // 检查新增的节点中是否有非翻译包装的元素
+          for (const node of m.addedNodes) {
+            const el = node as HTMLElement;
+            if (el.nodeType === 1) {
+              // 跳过翻译包装元素自身及其子树
+              if (el.classList?.contains(TRANSLATION_CLASS)) continue;
+              // 如果元素内部包含翻译包装（如父元素重新挂载），检查其是否只有翻译变动
+              if (el.querySelector(`.${TRANSLATION_CLASS}`) && !el.innerText?.trim()) continue;
+            }
+            return true; // 有外部变动
+          }
+          // 检查移除的节点
+          for (const node of m.removedNodes) {
+            const el = node as HTMLElement;
+            if (el.nodeType === 1 && el.classList?.contains(TRANSLATION_CLASS)) continue;
+            return true; // 非翻译包装元素被移除
+          }
+          return false;
+        });
+
+        if (!hasForeignMutation) return; // 仅翻译注入变动，跳过
+
         clearTimeout(mutationTimeout);
         mutationTimeout = setTimeout(() => {
-          if (observer) startObserving(observer, currentSettings);
+          if (observer && !translationQueue.isProcessing()) {
+            startObserving(observer, currentSettings);
+          }
         }, MUTATION_DEBOUNCE_MS);
       });
       mutationObserver.observe(document.body, {
