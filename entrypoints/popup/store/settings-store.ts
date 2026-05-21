@@ -51,7 +51,7 @@ export const settingsStore = proxy<SettingsStore>({
   },
   get isCurrentSiteInList() {
     if (!this.data || !this.currentHostname) return false;
-    return this.data.domainList.some((d) =>
+    return this.data.domainList.some((d: string) =>
       matchDomain(this.currentHostname, d),
     );
   },
