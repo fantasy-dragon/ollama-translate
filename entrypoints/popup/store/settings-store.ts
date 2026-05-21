@@ -109,7 +109,7 @@ export const settingsActions = {
     }
   },
 
-  /** 将当前站点加入或移出域名列表 */
+  /** 将当前站点加入或移出白名单/黑名单（仅影响当前网站） */
   toggleCurrentSite: () => {
     if (!settingsStore.data || !settingsStore.currentHostname) return;
     const { domainList } = settingsStore.data;

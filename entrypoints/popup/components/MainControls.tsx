@@ -58,21 +58,12 @@ export function MainControls() {
 
       {/* 当前网站操作 */}
       <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <label
-            htmlFor="site-translate-toggle"
-            className="text-xs font-semibold leading-none cursor-pointer"
-          >
-            当前网站自动翻译
-          </label>
-          <p className="text-[10px] text-muted-foreground truncate max-w-45">
-            {currentHostname
-              ? isCurrentSiteInList
-                ? `已在${LIST_MODE_LABELS[mode].label}中`
-                : `未在${LIST_MODE_LABELS[mode].label}中`
-              : "无法获取当前域名"}
-          </p>
-        </div>
+        <label
+          htmlFor="site-translate-toggle"
+          className="text-xs font-semibold leading-none cursor-pointer"
+        >
+          当前网站
+        </label>
         <button
           id="site-translate-toggle"
           type="button"
