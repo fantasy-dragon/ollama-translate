@@ -17,6 +17,7 @@ function matchDomain(hostname: string, domain: string): boolean {
   return hostname === domain || hostname.endsWith(`.${domain}`);
 }
 
+
 /** 根据 listMode 和 domainList 判断站点是否应自动翻译 */
 function isSiteEnabled(
   hostname: string,
@@ -27,8 +28,8 @@ function isSiteEnabled(
   return listMode === "whitelist" ? inList : !inList;
 }
 
-// ── State ──
 
+// ── State ──
 interface SettingsStore {
   data: Settings | null;
   currentHostname: string;
@@ -70,7 +71,7 @@ export const settingsActions = {
       settingsStore.data = s;
     }
   },
-  
+
   updateSettings: async (update: Partial<Settings>) => {
     if (!settingsStore.data) return;
     const prevUrl = settingsStore.data.ollamaUrl;
