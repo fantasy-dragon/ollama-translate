@@ -24,7 +24,6 @@ function App() {
     );
   }
 
-
   return (
     <ErrorBoundary>
       <div className="w-[320px]  bg-background text-foreground font-sans overflow-hidden">

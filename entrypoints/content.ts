@@ -13,6 +13,65 @@ const QUEUE_DEBOUNCE_MS = 300;
 
 const translatedMap = new WeakMap<HTMLElement, boolean>();
 
+// ── 内容级去重：跨 DOM 替换的翻译记录 ──────────────
+// 使用文本内容哈希，避免同一段文字因 DOM 替换/克隆被重复翻译
+const MAX_DEDUP_SIZE = 1000;
+const translatedTextSet = new Set<string>();
+
+function hashText(text: string): string {
+  // 简单哈希：取前 80 字符 + 长度，足够区分不同文本
+  const normalized = text.replace(/\s+/g, " ").trim();
+  return `${normalized.length}::${normalized.slice(0, 80)}`;
+}
+
+function isTextAlreadyTranslated(text: string): boolean {
+  if (translatedTextSet.size === 0) return false;
+  return translatedTextSet.has(hashText(text));
+}
+
+function markTextTranslated(text: string): void {
+  if (translatedTextSet.size >= MAX_DEDUP_SIZE) {
+    // LRU 清理：删除最早的一半
+    const entries = [...translatedTextSet];
+    const toRemove = entries.slice(0, Math.floor(entries.length / 2));
+    for (const entry of toRemove) {
+      translatedTextSet.delete(entry);
+    }
+  }
+  translatedTextSet.add(hashText(text));
+}
+
+// ── CJK 字符检测：避免翻译已含中文的内容 ──────────
+
+/** 如果文本中 CJK 字符占比超过此阈值，视为已翻译 */
+const CJK_RATIO_THRESHOLD = 0.3;
+
+function getCJKRatio(text: string): number {
+  let cjkCount = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (
+      code !== undefined &&
+      // CJK 统一表意文字 + 扩展区
+      ((code >= 0x4e00 && code <= 0x9fff) ||
+      (code >= 0x3400 && code <= 0x4dbf) ||
+      (code >= 0x20000 && code <= 0x2a6df) ||
+      // CJK 标点符号
+      (code >= 0x3000 && code <= 0x303f) ||
+      (code >= 0xff00 && code <= 0xffef) ||
+      // 平假名/片假名（日文也算已翻译）
+      (code >= 0x3040 && code <= 0x309f) ||
+      (code >= 0x30a0 && code <= 0x30ff) ||
+      // 韩文
+      (code >= 0xac00 && code <= 0xd7af) ||
+      (code >= 0x1100 && code <= 0x11ff))
+    ) {
+      cjkCount++;
+    }
+  }
+  return text.length > 0 ? cjkCount / text.length : 0;
+}
+
 function isTranslated(el: HTMLElement): boolean {
   return (
     translatedMap.has(el) ||
@@ -42,6 +101,12 @@ function shouldTranslate(el: HTMLElement, settings: Settings): boolean {
 
   const text = el.innerText.trim();
   if (text.length < settings.minTextLength) return false;
+
+  // 内容级去重：同一段文字已翻译过，跳过
+  if (isTextAlreadyTranslated(text)) return false;
+
+  // CJK 字符占比过高，说明内容已含中文翻译，跳过
+  if (getCJKRatio(text) > CJK_RATIO_THRESHOLD) return false;
 
   const excludedTags = buildExcludedTags(settings);
   if (excludedTags.has(el.tagName)) return false;
@@ -174,6 +239,7 @@ class TranslationQueue {
       el.classList.remove(TRANSLATING_CLASS);
       injectTranslation(el, translation);
       translatedMap.set(el, true);
+      markTextTranslated(el.innerText.trim());
       try {
         if (el.dataset) el.dataset.ollamaTranslated = "1";
       } catch {}
@@ -196,6 +262,7 @@ class TranslationQueue {
             if (translation) {
               injectTranslation(el, translation);
               translatedMap.set(el, true);
+              markTextTranslated(texts[i]);
               try {
                 if (el.dataset) el.dataset.ollamaTranslated = "1";
               } catch {}
