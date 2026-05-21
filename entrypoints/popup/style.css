@@ -47,6 +47,10 @@
   --color-ring-dark: hsl(240 4.9% 83.9%);
 }
 
+html {
+  overflow: hidden;
+}
+
 :root {
   color-scheme: light dark;
 }
@@ -87,6 +91,7 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+  overflow: hidden;
 }
 
 /* ── Custom Scrollbar ── */

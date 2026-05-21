@@ -25,9 +25,10 @@ function App() {
     );
   }
 
+
   return (
     <ErrorBoundary>
-      <div className="w-[320px]  bg-background text-foreground font-sans overflow-x-hidden">
+      <div className="w-[320px]  bg-background text-foreground font-sans overflow-hidden">
         <div className="bg-card p-4 space-y-5 shadow-xl border-none">
           <Header />
           <div className="h-px w-full bg-secondary" />
