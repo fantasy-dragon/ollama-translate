@@ -1,4 +1,5 @@
 import {
+  type TestConnectionResponse,
   type TranslateResponse,
   MessageType,
   sendExtensionMessage,
@@ -9,11 +10,18 @@ import {
   filterCached,
   setCachedTranslation,
 } from "../utils/cache";
-import { getSettings } from "../utils/storage";
+import { type Settings, getSettings, setSettings } from "../utils/storage";
 
-function sendStatus(status: "translating" | "idle", latency?: number) {
-  sendExtensionMessage(MessageType.TRANSLATION_STATUS, { status, latency })
-    .catch(() => {});    
+function sendStatus(
+  status: "translating" | "idle",
+  latency?: number,
+  progress?: string,
+) {
+  sendExtensionMessage(MessageType.TRANSLATION_STATUS, {
+    status,
+    latency,
+    progress,
+  }).catch(() => {});
 }
 
 function getErrorMessage(error: unknown): string {
@@ -24,10 +32,18 @@ function normalizeUrl(url: string): string {
   return url.replace(/\/$/, "");
 }
 
-
-async function ollamaFetch<T>(path: string, body?: object): Promise<T> {
-  const settings = await getSettings();
-  const baseUrl = normalizeUrl(settings.ollamaUrl);
+async function ollamaFetch<T>(
+  path: string,
+  body?: object,
+  baseUrlOverride?: string,
+): Promise<T> {
+  let baseUrl: string;
+  if (baseUrlOverride) {
+    baseUrl = normalizeUrl(baseUrlOverride);
+  } else {
+    const settings = await getSettings();
+    baseUrl = normalizeUrl(settings.ollamaUrl);
+  }
   const url = `${baseUrl}${path}`;
 
   const response = await withRetry(
@@ -41,7 +57,6 @@ async function ollamaFetch<T>(path: string, body?: object): Promise<T> {
       maxRetries: 2,
       baseDelayMs: 1000,
       shouldRetry: (error) => {
-        // 网络错误（TypeError）或 5xx 服务端错误可重试
         if (error instanceof TypeError) return true;
         if (error instanceof Response) {
           return error.status >= 500;
@@ -65,17 +80,19 @@ async function ollamaFetch<T>(path: string, body?: object): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export default defineBackground(() => {
-  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.type === MessageType.TRANSLATE && message.texts) {
-      handleTranslate(message.texts).then(sendResponse);
-      return true;
-    }
-  });
-});
+// ── 域名匹配 ──
+
+function matchDomain(hostname: string, domain: string): boolean {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+function isDomainEnabled(settings: Settings, hostname: string): boolean {
+  return settings.domainList.some((d) => matchDomain(hostname, d));
+}
+
+// ── 翻译逻辑 ──
 
 async function translateOne(text: string, model: string): Promise<string> {
-  // 检查缓存
   const cached = filterCached([text], model);
   if (cached.uncached.length === 0) {
     return cached.cachedTranslations.get(0) ?? "";
@@ -92,18 +109,20 @@ async function translateOne(text: string, model: string): Promise<string> {
     setCachedTranslation(text, model, result);
     return result;
   } catch (error: unknown) {
-    return `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`;
+    console.error(`[Ollama 翻译] 翻译失败: ${getErrorMessage(error)}`);
+    return "";
   }
 }
 
 async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const settings = await getSettings();
   if (!settings.model) {
-    return { translations: texts.map(() => "翻译失败: 未选择模型") };
+    return { translations: texts.map(() => "") };
   }
 
   const startTime = Date.now();
-  sendStatus("translating");
+  const batchLabel = `${texts.length}段`;
+  sendStatus("translating", undefined, batchLabel);
 
   const translations = await Promise.all(
     texts.map((text) => translateOne(text, settings.model)),
@@ -112,3 +131,59 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   sendStatus("idle", Date.now() - startTime);
   return { translations };
 }
+
+// ── 连接测试 ──
+
+async function handleTestConnection(
+  ollamaUrl?: string,
+): Promise<TestConnectionResponse> {
+  try {
+    const data = await ollamaFetch<{ models?: { name: string }[] }>(
+      "/api/tags",
+      undefined,
+      ollamaUrl,
+    );
+    const models = (data.models ?? []).map((m) => m.name);
+    return { success: true, models };
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) };
+  }
+}
+
+// ── 站点切换 ──
+
+async function toggleCurrentSite(): Promise<void> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.url) return;
+
+  const hostname = new URL(tab.url).hostname.toLowerCase();
+  const settings = await getSettings();
+  const inList = settings.domainList.some((d) => matchDomain(hostname, d));
+
+  const newList = inList
+    ? settings.domainList.filter((d) => !matchDomain(hostname, d))
+    : [...settings.domainList, hostname];
+
+  await setSettings({ domainList: newList });
+}
+
+// ── 入口 ──
+
+export default defineBackground(() => {
+  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.type === MessageType.TRANSLATE && message.texts) {
+      handleTranslate(message.texts).then(sendResponse);
+      return true;
+    }
+    if (message.type === MessageType.TEST_CONNECTION) {
+      handleTestConnection().then(sendResponse);
+      return true;
+    }
+  });
+
+  browser.commands.onCommand.addListener((command) => {
+    if (command === "toggle-translation") {
+      toggleCurrentSite();
+    }
+  });
+});

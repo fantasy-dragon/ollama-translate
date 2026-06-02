@@ -13,6 +13,12 @@ export default defineConfig({
     ],
     name: "Ollama 沉浸式翻译",
     description: "利用本地 Ollama 提供的 AI 能力实现网页双语翻译",
+    commands: {
+      "toggle-translation": {
+        suggested_key: { default: "Ctrl+Shift+T" },
+        description: "切换当前站点翻译",
+      },
+    },
   },
   vite: () => ({
     plugins: [tailwindcss()],

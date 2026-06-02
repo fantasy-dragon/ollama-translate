@@ -13,9 +13,10 @@ export { translationStore, translationActions } from "./translation-store";
 
 /**
  * 应用初始化：加载设置 → 查询当前标签页 → 监听翻译状态
+ * 返回清理函数，在弹窗关闭时移除监听器
  */
-export async function initApp(): Promise<void> {
+export async function initApp(): Promise<() => void> {
   await settingsActions.loadSettings();
   await settingsActions.queryCurrentTab();
-  translationActions.listen();
+  return translationActions.listen();
 }

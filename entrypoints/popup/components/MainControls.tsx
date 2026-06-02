@@ -2,6 +2,7 @@ import { useSnapshot } from "valtio";
 import { settingsStore, settingsActions } from "../store/settings-store";
 
 export function MainControls() {
+
   const { data: settings, currentHostname, isCurrentSiteEnabled } =
     useSnapshot(settingsStore);
 
@@ -41,3 +42,4 @@ export function MainControls() {
     </div>
   );
 }
+

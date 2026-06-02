@@ -12,7 +12,13 @@ function App() {
   const { data: settings } = useSnapshot(settingsStore);
 
   useEffect(() => {
-    initApp();
+    let cleanup: (() => void) | undefined;
+    initApp().then((fn) => {
+      cleanup = fn;
+    });
+    return () => {
+      cleanup?.();
+    };
   }, []);
 
 

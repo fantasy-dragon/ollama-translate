@@ -20,6 +20,10 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 const STORAGE_KEY = "settings";
+const DEBOUNCE_MS = 300;
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingUpdate: Partial<Settings> | null = null;
 
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(STORAGE_KEY);
@@ -39,8 +43,22 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function setSettings(update: Partial<Settings>): Promise<void> {
-  const current = await getSettings();
-  await browser.storage.local.set({
-    [STORAGE_KEY]: { ...current, ...update },
+  // 合并待写入的更新，debounce 避免高频写入
+  pendingUpdate = { ...pendingUpdate, ...update };
+
+  if (debounceTimer) return; // 已有定时器在等待，合并后由它统一写入
+
+  return new Promise((resolve) => {
+    debounceTimer = setTimeout(async () => {
+      debounceTimer = null;
+      const merged = pendingUpdate ?? {};
+      pendingUpdate = null;
+
+      const current = await getSettings();
+      await browser.storage.local.set({
+        [STORAGE_KEY]: { ...current, ...merged },
+      });
+      resolve();
+    }, DEBOUNCE_MS);
   });
 }

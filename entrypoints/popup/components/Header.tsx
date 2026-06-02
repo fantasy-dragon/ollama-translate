@@ -3,7 +3,7 @@ import { useSnapshot } from "valtio";
 import { translationStore } from "../store/translation-store";
 
 export function Header() {
-  const { isTranslating } = useSnapshot(translationStore);
+  const { isTranslating, progress } = useSnapshot(translationStore);
 
   return (
     <header className="flex items-center justify-between mb-2">
@@ -22,12 +22,14 @@ export function Header() {
             }`}
           />
           <span className="opacity-70">
-            {isTranslating ? "翻译中" : "在线"}
+            {isTranslating
+              ? progress
+                ? `翻译中 (${progress})`
+                : "翻译中"
+              : "在线"}
           </span>
         </div>
       </div>
     </header>
   );
 }
-
-
