@@ -19,7 +19,9 @@ const QUEUE_DEBOUNCE_MS = 300;
 /** 每批翻译的最大文本数 */
 const CHUNK_SIZE = 5;
 
-const translatedMap = new WeakMap<HTMLElement, boolean>();
+/** 翻译代际计数器：切换模型时递增，使旧的 WeakMap 标记全部失效 */
+let translationGeneration = 0;
+const translatedMap = new WeakMap<HTMLElement, number>();
 
 // ── 内容级去重：跨 DOM 替换的翻译记录 ──────────────
 // 使用文本内容哈希，避免同一段文字因 DOM 替换/克隆被重复翻译
@@ -101,11 +103,35 @@ function isPageCJK(): boolean {
 
 function isTranslated(el: HTMLElement): boolean {
   return (
-    translatedMap.has(el) ||
+    translatedMap.get(el) === translationGeneration ||
     (el.dataset && el.dataset.ollamaTranslated === "1") ||
     el.classList.contains(TRANSLATING_CLASS) ||
     el.querySelector(`.${TRANSLATION_CLASS}, .${TRANSLATION_CLASS_INLINE}`) !== null
   );
+}
+
+function clearAllTranslations(): void {
+  // 失效当前代际的所有 WeakMap 标记
+  translationGeneration++;
+
+  // 清除页面上的所有译文注入
+  for (const el of document.querySelectorAll(
+    `.${TRANSLATION_CLASS}, .${TRANSLATION_CLASS_INLINE}`,
+  )) {
+    el.remove();
+  }
+
+  // 清除 data 属性，使元素可被重新翻译
+  for (const el of document.querySelectorAll("[data-ollama-translated]")) {
+    try {
+      delete (el as HTMLElement).dataset.ollamaTranslated;
+    } catch {
+      // ignore
+    }
+  }
+
+  // 清空内容级去重集合
+  translatedTextSet.clear();
 }
 
 /**
@@ -277,7 +303,7 @@ class TranslationQueue {
       const el = batch[idx];
       el.classList.remove(TRANSLATING_CLASS);
       injectTranslation(el, translation);
-      translatedMap.set(el, true);
+      translatedMap.set(el, translationGeneration);
       markTextTranslated(el.innerText.trim());
       try {
         if (el.dataset) el.dataset.ollamaTranslated = "1";
@@ -305,7 +331,7 @@ class TranslationQueue {
               const translation = response.translations[i];
               if (translation) {
                 injectTranslation(el, translation);
-                translatedMap.set(el, true);
+                translatedMap.set(el, translationGeneration);
                 markTextTranslated(chunkTexts[i]);
                 try {
                   if (el.dataset) el.dataset.ollamaTranslated = "1";
@@ -459,11 +485,31 @@ export default defineContentScript({
     browser.storage.onChanged.addListener(async (changes) => {
       if (changes.settings) {
         const newSettings = changes.settings.newValue as Settings | undefined;
+        const oldSettings = changes.settings.oldValue as Settings | undefined;
+
+        // 模型变更：清除旧译文，用新模型重新翻译
+        if (
+          newSettings &&
+          oldSettings &&
+          newSettings.model !== oldSettings.model &&
+          observer
+        ) {
+          currentSettings = newSettings;
+          clearAllTranslations();
+          translationQueue.destroy();
+          observer.disconnect();
+          observer = null;
+          mutationObserver?.disconnect();
+          mutationObserver = null;
+          await start();
+          return;
+        }
+
         // 显示模式变更：仅更新显示，不重启 observer
         if (newSettings && observer && newSettings.displayMode !== currentSettings?.displayMode) {
           currentSettings = newSettings;
           applyDisplayMode(newSettings.displayMode);
-        } else {
+        } else if (!observer) {
           checkAndRun();
         }
       }
