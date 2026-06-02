@@ -1,7 +1,6 @@
 import "@/assets/content.css";
 import { MessageType, sendExtensionMessage } from "../utils/messaging";
 import { type Settings, getSettings } from "../utils/storage";
-import { getCachedTranslation } from "../utils/cache";
 
 const TRANSLATION_CLASS = "ollama-translation-wrap";
 const TRANSLATING_CLASS = "ollama-translating";
@@ -10,6 +9,8 @@ const LINK_DENSITY_THRESHOLD = 50;
 
 /** 队列处理 debounce 时间（毫秒） */
 const QUEUE_DEBOUNCE_MS = 300;
+/** 每批翻译的最大文本数 */
+const CHUNK_SIZE = 5;
 
 const translatedMap = new WeakMap<HTMLElement, boolean>();
 
@@ -245,34 +246,40 @@ class TranslationQueue {
       } catch {}
     }
 
-    // 发送未缓存的到 background 翻译
+    // 分批发送到 background 翻译（每批 CHUNK_SIZE 个，渐进渲染）
     if (toTranslate.length > 0) {
       setElementsClass(toTranslate, TRANSLATING_CLASS, true);
 
-      try {
-        const response = await sendExtensionMessage(MessageType.TRANSLATE, {
-          texts,
-        });
+      for (let start = 0; start < toTranslate.length; start += CHUNK_SIZE) {
+        const end = Math.min(start + CHUNK_SIZE, toTranslate.length);
+        const chunkElements = toTranslate.slice(start, end);
+        const chunkTexts = texts.slice(start, end);
 
-        if (response?.translations) {
-          for (let i = 0; i < toTranslate.length; i++) {
-            const el = toTranslate[i];
-            el.classList.remove(TRANSLATING_CLASS);
-            const translation = response.translations[i];
-            if (translation) {
-              injectTranslation(el, translation);
-              translatedMap.set(el, true);
-              markTextTranslated(texts[i]);
-              try {
-                if (el.dataset) el.dataset.ollamaTranslated = "1";
-              } catch {}
-              // 写本地缓存
-              this.modelCache.set(texts[i], translation);
+        try {
+          const response = await sendExtensionMessage(MessageType.TRANSLATE, {
+            texts: chunkTexts,
+          });
+
+          if (response?.translations) {
+            for (let i = 0; i < chunkElements.length; i++) {
+              const el = chunkElements[i];
+              el.classList.remove(TRANSLATING_CLASS);
+              const translation = response.translations[i];
+              if (translation) {
+                injectTranslation(el, translation);
+                translatedMap.set(el, true);
+                markTextTranslated(chunkTexts[i]);
+                try {
+                  if (el.dataset) el.dataset.ollamaTranslated = "1";
+                } catch {}
+                this.modelCache.set(chunkTexts[i], translation);
+              }
             }
           }
+        } catch {
+          // 单个 chunk 失败不阻塞后续 chunk
+          setElementsClass(chunkElements, TRANSLATING_CLASS, false);
         }
-      } catch {
-        setElementsClass(toTranslate, TRANSLATING_CLASS, false);
       }
     }
 

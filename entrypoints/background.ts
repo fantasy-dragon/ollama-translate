@@ -8,6 +8,7 @@ import { buildTranslatePrompt } from "../utils/prompts";
 import { withRetry } from "../utils/retry";
 import {
   filterCached,
+  loadPersistedCache,
   setCachedTranslation,
 } from "../utils/cache";
 import { type Settings, getSettings, setSettings } from "../utils/storage";
@@ -170,6 +171,9 @@ async function toggleCurrentSite(): Promise<void> {
 // ── 入口 ──
 
 export default defineBackground(() => {
+  // 启动时从 storage 恢复持久化缓存
+  loadPersistedCache();
+
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === MessageType.TRANSLATE && message.texts) {
       handleTranslate(message.texts).then(sendResponse);
