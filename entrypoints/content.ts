@@ -3,8 +3,15 @@ import { MessageType, sendExtensionMessage } from "../utils/messaging";
 import { type Settings, getSettings } from "../utils/storage";
 
 const TRANSLATION_CLASS = "ollama-translation-wrap";
+const TRANSLATION_CLASS_INLINE = "ollama-translation-wrap-inline";
 const TRANSLATING_CLASS = "ollama-translating";
 const MUTATION_DEBOUNCE_MS = 500;
+
+/** 行内元素标签（译文用 span 注入，避免破坏布局） */
+const INLINE_TAGS = new Set([
+  "SPAN", "A", "EM", "STRONG", "B", "I", "U", "SMALL", "MARK",
+  "CODE", "KBD", "SAMP", "TIME", "ABBR", "CITE", "Q", "LABEL",
+]);
 const LINK_DENSITY_THRESHOLD = 50;
 
 /** 队列处理 debounce 时间（毫秒） */
@@ -42,10 +49,12 @@ function markTextTranslated(text: string): void {
   translatedTextSet.add(hashText(text));
 }
 
-// ── CJK 字符检测：避免翻译已含中文的内容 ──────────
+// ── CJK 字符 + 页面语言检测 ──────────────────────
 
-/** 如果文本中 CJK 字符占比超过此阈值，视为已翻译 */
-const CJK_RATIO_THRESHOLD = 0.3;
+/** 如果文本中 CJK 字符占比超过此阈值，视为无需翻译（中日韩文为主的内容） */
+const CJK_RATIO_THRESHOLD = 0.5;
+/** 页面级 CJK 阈值：整体 CJK 占比超过此值则整个页面跳过 */
+const PAGE_CJK_THRESHOLD = 0.4;
 
 function getCJKRatio(text: string): number {
   let cjkCount = 0;
@@ -73,13 +82,29 @@ function getCJKRatio(text: string): number {
   return text.length > 0 ? cjkCount / text.length : 0;
 }
 
+/**
+ * 检测页面是否为中文/日文/韩文为主的界面
+ * 采样 body 和内联文本，总体 CJK 占比超过阈值则跳过整个页面
+ */
+function isPageCJK(): boolean {
+  // 优先检测 html lang 属性
+  const htmlLang = document.documentElement.lang?.toLowerCase();
+  if (htmlLang && ["zh", "ja", "ko"].some((l) => htmlLang.startsWith(l))) {
+    return true;
+  }
+
+  // 采样页面文本：取 body 文本前 3000 字符
+  const bodyText = (document.body?.innerText ?? "").slice(0, 3000);
+  if (bodyText.length < 50) return false; // 文本太少，不确定
+  return getCJKRatio(bodyText) > PAGE_CJK_THRESHOLD;
+}
+
 function isTranslated(el: HTMLElement): boolean {
   return (
     translatedMap.has(el) ||
-    // 标记属性更可靠（在某些 DOM 变化下 WeakMap 可能失效）
     (el.dataset && el.dataset.ollamaTranslated === "1") ||
     el.classList.contains(TRANSLATING_CLASS) ||
-    el.querySelector(`.${TRANSLATION_CLASS}`) !== null
+    el.querySelector(`.${TRANSLATION_CLASS}, .${TRANSLATION_CLASS_INLINE}`) !== null
   );
 }
 
@@ -146,8 +171,10 @@ function setElementsClass(
 }
 
 function setTranslationVisibility(visible: boolean) {
-  const display = visible ? "block" : "none";
-  for (const el of document.querySelectorAll(`.${TRANSLATION_CLASS}`)) {
+  const display = visible ? "" : "none";
+  for (const el of document.querySelectorAll(
+    `.${TRANSLATION_CLASS}, .${TRANSLATION_CLASS_INLINE}`,
+  )) {
     (el as HTMLElement).style.display = display;
   }
 }
@@ -161,13 +188,16 @@ function applyDisplayMode(mode: string): void {
 }
 
 function injectTranslation(el: HTMLElement, translation: string) {
-  if (el.querySelector(`.${TRANSLATION_CLASS}`) || (el.dataset && el.dataset.ollamaTranslated === "1")) return;
+  if (
+    el.querySelector(`.${TRANSLATION_CLASS}, .${TRANSLATION_CLASS_INLINE}`) ||
+    (el.dataset && el.dataset.ollamaTranslated === "1")
+  ) return;
 
-  const wrap = document.createElement("div");
-  wrap.className = TRANSLATION_CLASS;
+  const isInline = INLINE_TAGS.has(el.tagName);
+  const wrap = document.createElement(isInline ? "span" : "div");
+  wrap.className = isInline ? TRANSLATION_CLASS_INLINE : TRANSLATION_CLASS;
   wrap.innerText = translation;
   el.appendChild(wrap);
-  // 标记已注入，防止在 DOM 变动或节点替换时被重复翻译
   try {
     if (el.dataset) el.dataset.ollamaTranslated = "1";
   } catch {
@@ -332,6 +362,9 @@ export default defineContentScript({
     const start = async () => {
       if (observer) return;
 
+      // 中文/日文/韩文界面直接跳过，不做翻译
+      if (isPageCJK()) return;
+
       currentSettings = await getSettings();
 
       observer = new IntersectionObserver(
@@ -363,7 +396,10 @@ export default defineContentScript({
             const el = node as HTMLElement;
             if (el.nodeType === 1) {
               // 跳过翻译包装元素自身及其子树
-              if (el.classList?.contains(TRANSLATION_CLASS)) continue;
+              if (
+                el.classList?.contains(TRANSLATION_CLASS) ||
+                el.classList?.contains(TRANSLATION_CLASS_INLINE)
+              ) continue;
               // 如果元素内部包含翻译包装（如父元素重新挂载），检查其是否只有翻译变动
               if (el.querySelector(`.${TRANSLATION_CLASS}`) && !el.innerText?.trim()) continue;
             }
@@ -372,7 +408,11 @@ export default defineContentScript({
           // 检查移除的节点
           for (const node of m.removedNodes) {
             const el = node as HTMLElement;
-            if (el.nodeType === 1 && el.classList?.contains(TRANSLATION_CLASS)) continue;
+            if (
+              el.nodeType === 1 &&
+              (el.classList?.contains(TRANSLATION_CLASS) ||
+                el.classList?.contains(TRANSLATION_CLASS_INLINE))
+            ) continue;
             return true; // 非翻译包装元素被移除
           }
           return false;

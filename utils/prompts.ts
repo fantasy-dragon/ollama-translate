@@ -4,8 +4,10 @@
 
 /** 默认翻译提示词 */
 export const DEFAULT_TRANSLATION_PROMPT = `
-你是一位精通科技与通俗文学的顶级英中翻译专家。请将用户输入的英文文本翻译为地道、流畅的中文。
+你是一位精通多语言翻译的顶级专家。请将用户输入的文本翻译为地道、流畅的中文。
 规则：
+
+自动检测源语言，支持英语、日语、韩语、法语、德语等主流语言。
 
 彻底摆脱"翻译腔"，禁止直译。请根据中文的表达习惯和语序进行润色和意译。
 
@@ -17,6 +19,13 @@ export const DEFAULT_TRANSLATION_PROMPT = `
 `;
 
 /** 为单段文本构建翻译 prompt */
-export function buildTranslatePrompt(text: string): string {
-  return `${DEFAULT_TRANSLATION_PROMPT}\n文本内容: ${text}`;
+export function buildTranslatePrompt(text: string, contextTexts?: string[]): string {
+  const context = contextTexts
+    ?.filter((t) => t !== text)
+    .slice(0, 3)
+    .map((t) => `参考上下文（无需翻译，仅用于理解语境）: ${t.slice(0, 300)}`)
+    .join("\n");
+
+  const ctxBlock = context ? `\n${context}` : "";
+  return `${DEFAULT_TRANSLATION_PROMPT}${ctxBlock}\n文本内容: ${text}`;
 }

@@ -93,14 +93,18 @@ function isDomainEnabled(settings: Settings, hostname: string): boolean {
 
 // ── 翻译逻辑 ──
 
-async function translateOne(text: string, model: string): Promise<string> {
+async function translateOne(
+  text: string,
+  model: string,
+  contextTexts?: string[],
+): Promise<string> {
   const cached = filterCached([text], model);
   if (cached.uncached.length === 0) {
     return cached.cachedTranslations.get(0) ?? "";
   }
 
   try {
-    const prompt = buildTranslatePrompt(text);
+    const prompt = buildTranslatePrompt(text, contextTexts);
     const data = await ollamaFetch<{ response: string }>("/api/generate", {
       model,
       prompt,
@@ -125,8 +129,9 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const batchLabel = `${texts.length}段`;
   sendStatus("translating", undefined, batchLabel);
 
+  // 整个 chunk 作为上下文传入，让每个翻译调用能参考相邻文本
   const translations = await Promise.all(
-    texts.map((text) => translateOne(text, settings.model)),
+    texts.map((text) => translateOne(text, settings.model, texts)),
   );
 
   sendStatus("idle", Date.now() - startTime);

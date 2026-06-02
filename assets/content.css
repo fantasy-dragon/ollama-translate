@@ -1,15 +1,32 @@
 /* ── 方案一：现代主义·渐隐从属流 ── */
 
-/* Translation result: pure text hierarchy, no box */
+/* Translation result: subtle left accent + muted text */
 .ollama-translation-wrap {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   margin-bottom: 4px;
+  padding-left: 8px;
+  border-left: 2px solid color-mix(in srgb, currentColor 18%, transparent);
   line-height: 1.65;
   letter-spacing: 0.02em;
-  /* font-size: 0.825em; */
-  color: color-mix(in srgb, currentColor 50%, transparent);
+  font-size: 0.875em;
+  color: color-mix(in srgb, currentColor 55%, transparent);
   animation: ollama-fade-in 0.3s ease-out;
+}
+
+/* Inline variant: for SPAN, A, EM, etc. */
+.ollama-translation-wrap-inline {
+  display: inline;
+  margin-left: 4px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+  font-size: 0.875em;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  animation: ollama-fade-in 0.3s ease-out;
+}
+.ollama-translation-wrap-inline::before {
+  content: "· ";
+  color: color-mix(in srgb, currentColor 35%, transparent);
 }
 
 @keyframes ollama-fade-in {
