@@ -44,12 +44,3 @@
   50% { opacity: 0.8; }
 }
 
-/* ── Display Mode: Translation Only ── */
-html.ollama-mode-translation-only,
-html.ollama-mode-translation-only * {
-  color: transparent !important;
-}
-html.ollama-mode-translation-only .ollama-translation-wrap,
-html.ollama-mode-translation-only .ollama-translation-wrap * {
-  color: CanvasText !important;
-}

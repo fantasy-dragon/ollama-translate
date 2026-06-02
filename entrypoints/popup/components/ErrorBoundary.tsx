@@ -27,8 +27,6 @@ export class ErrorBoundary extends Component<
     console.error("[Ollama 翻译] 组件错误:", error, errorInfo);
   }
 
-
-
   render(): ReactNode {
     if (this.state.hasError) {
       return (

@@ -20,7 +20,7 @@ export default defineConfig({
       },
       "cycle-display-mode": {
         suggested_key: { default: "Ctrl+Shift+Y" },
-        description: "循环切换显示模式（双语/仅译文/仅原文）",
+        description: "切换显示模式（双语对照/仅原文）",
       },
     },
   },

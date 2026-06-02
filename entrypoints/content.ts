@@ -4,7 +4,6 @@ import { type Settings, getSettings } from "../utils/storage";
 
 const TRANSLATION_CLASS = "ollama-translation-wrap";
 const TRANSLATING_CLASS = "ollama-translating";
-const MODE_TRANSLATION_ONLY_CLASS = "ollama-mode-translation-only";
 const MUTATION_DEBOUNCE_MS = 500;
 const LINK_DENSITY_THRESHOLD = 50;
 
@@ -154,18 +153,10 @@ function setTranslationVisibility(visible: boolean) {
 }
 
 function applyDisplayMode(mode: string): void {
-  const html = document.documentElement;
-  html.classList.remove(MODE_TRANSLATION_ONLY_CLASS);
-  setTranslationVisibility(true);
-
-  switch (mode) {
-    case "translation-only":
-      html.classList.add(MODE_TRANSLATION_ONLY_CLASS);
-      break;
-    case "original-only":
-      setTranslationVisibility(false);
-      break;
-    // bilingual: default, no class, translations visible
+  if (mode === "original-only") {
+    setTranslationVisibility(false);
+  } else {
+    setTranslationVisibility(true);
   }
 }
 

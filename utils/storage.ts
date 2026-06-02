@@ -1,8 +1,7 @@
-export type DisplayMode = "bilingual" | "translation-only" | "original-only";
+export type DisplayMode = "bilingual" | "original-only";
 
 export const DISPLAY_MODES: readonly DisplayMode[] = [
   "bilingual",
-  "translation-only",
   "original-only",
 ];
 
