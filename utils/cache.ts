@@ -65,12 +65,22 @@ class LRUCache {
 export const translationCache = new LRUCache();
 
 /**
+ * 简单但可靠的字符串哈希（djb2 变体）
+ * 对整个文本内容做哈希，避免"长度+前缀"方案的碰撞
+ */
+function hashString(s: string): string {
+  let hash = 5381;
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) + hash + s.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
  * 生成缓存的键
  */
 export function getCacheKey(text: string, model: string): string {
-  // 简单哈希：使用文本长度 + 前 50 字符 + 模型名
-  const prefix = text.slice(0, 50);
-  return `${model}::${text.length}::${prefix}`;
+  return `${model}::${hashString(text)}`;
 }
 
 /**

@@ -1,13 +1,9 @@
 export interface Settings {
   ollamaUrl: string;
   model: string;
-  autoTranslate: boolean;
   minTextLength: number;
-  batchSize: number;
   /** 白名单域名列表：仅翻译列表中的域名 */
   domainList: readonly string[];
-  /** 已启用自动翻译的域名列表（兼容旧版，映射到 domainList） */
-  enabledDomains: readonly string[];
   /** CSS 选择器，用于匹配需要翻译的文本元素 */
   textSelector: string;
   /** 需要排除的标签名（逗号分隔） */
@@ -17,11 +13,8 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   ollamaUrl: "http://127.0.0.1:11434",
   model: "qwen2.5:7b",
-  autoTranslate: false,
   minTextLength: 20,
-  batchSize: 1,
   domainList: [],
-  enabledDomains: [],
   textSelector: "p, h1, h2, h3, h4, h5, h6, li, article div",
   excludedTags: "SCRIPT,STYLE,CODE,PRE,NAV,HEADER,FOOTER,BUTTON,INPUT",
 };
@@ -33,14 +26,13 @@ export async function getSettings(): Promise<Settings> {
   const settings = stored[STORAGE_KEY];
   if (settings) {
     const merged = { ...DEFAULT_SETTINGS, ...settings };
-    // 向后兼容：旧版本只有 enabledDomains，同步到 domainList
+    // 向后兼容：旧版本使用 enabledDomains，迁移到 domainList
     if (!merged.domainList || merged.domainList.length === 0) {
-      if (merged.enabledDomains && merged.enabledDomains.length > 0) {
-        merged.domainList = [...merged.enabledDomains];
+      const legacy = settings as { enabledDomains?: string[] };
+      if (legacy.enabledDomains && legacy.enabledDomains.length > 0) {
+        merged.domainList = [...legacy.enabledDomains];
       }
     }
-    // 反过来：确保 enabledDomains 与 domainList 同步
-    merged.enabledDomains = [...merged.domainList];
     return merged;
   }
   return { ...DEFAULT_SETTINGS };
@@ -48,14 +40,6 @@ export async function getSettings(): Promise<Settings> {
 
 export async function setSettings(update: Partial<Settings>): Promise<void> {
   const current = await getSettings();
-  // 如果更新了 domainList，同步到 enabledDomains
-  if (update.domainList) {
-    update.enabledDomains = [...update.domainList];
-  }
-  // 如果更新了 enabledDomains，同步到 domainList
-  if (update.enabledDomains) {
-    update.domainList = [...update.enabledDomains];
-  }
   await browser.storage.local.set({
     [STORAGE_KEY]: { ...current, ...update },
   });

@@ -13,7 +13,7 @@ import { getSettings } from "../utils/storage";
 
 function sendStatus(status: "translating" | "idle", latency?: number) {
   sendExtensionMessage(MessageType.TRANSLATION_STATUS, { status, latency })
-    .catch(() => {});
+    .catch(() => {});    
 }
 
 function getErrorMessage(error: unknown): string {
@@ -23,6 +23,7 @@ function getErrorMessage(error: unknown): string {
 function normalizeUrl(url: string): string {
   return url.replace(/\/$/, "");
 }
+
 
 async function ollamaFetch<T>(path: string, body?: object): Promise<T> {
   const settings = await getSettings();
@@ -73,6 +74,28 @@ export default defineBackground(() => {
   });
 });
 
+async function translateOne(text: string, model: string): Promise<string> {
+  // 检查缓存
+  const cached = filterCached([text], model);
+  if (cached.uncached.length === 0) {
+    return cached.cachedTranslations.get(0) ?? "";
+  }
+
+  try {
+    const prompt = buildTranslatePrompt(text);
+    const data = await ollamaFetch<{ response: string }>("/api/generate", {
+      model,
+      prompt,
+      stream: false,
+    });
+    const result = data.response.trim();
+    setCachedTranslation(text, model, result);
+    return result;
+  } catch (error: unknown) {
+    return `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`;
+  }
+}
+
 async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const settings = await getSettings();
   if (!settings.model) {
@@ -82,33 +105,9 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
   const startTime = Date.now();
   sendStatus("translating");
 
-  const translations: string[] = [];
-
-  for (const text of texts) {
-    // 检查缓存
-    const cached = filterCached([text], settings.model);
-    if (cached.uncached.length === 0) {
-      translations.push(cached.cachedTranslations.get(0) ?? "");
-      continue;
-    }
-
-    try {
-      const prompt = buildTranslatePrompt(text);
-      const data = await ollamaFetch<{ response: string }>("/api/generate", {
-        model: settings.model,
-        prompt,
-        stream: false,
-      });
-      const result = data.response.trim();
-      setCachedTranslation(text, settings.model, result);
-      translations.push(result);
-    } catch (error: unknown) {
-      
-      translations.push(
-        `翻译失败 (网络或服务错误: ${getErrorMessage(error)})`,
-      );
-    }
-  }
+  const translations = await Promise.all(
+    texts.map((text) => translateOne(text, settings.model)),
+  );
 
   sendStatus("idle", Date.now() - startTime);
   return { translations };
