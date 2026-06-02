@@ -11,7 +11,7 @@ import {
   loadPersistedCache,
   setCachedTranslation,
 } from "../utils/cache";
-import { type Settings, getSettings, setSettings } from "../utils/storage";
+import { type Settings, DISPLAY_MODES, getSettings, setSettings } from "../utils/storage";
 
 function sendStatus(
   status: "translating" | "idle",
@@ -151,6 +151,15 @@ async function handleTestConnection(
   }
 }
 
+// ── 显示模式切换 ──
+
+async function cycleDisplayMode(): Promise<void> {
+  const settings = await getSettings();
+  const idx = DISPLAY_MODES.indexOf(settings.displayMode);
+  const next = DISPLAY_MODES[(idx + 1) % DISPLAY_MODES.length];
+  await setSettings({ displayMode: next });
+}
+
 // ── 站点切换 ──
 
 async function toggleCurrentSite(): Promise<void> {
@@ -188,6 +197,9 @@ export default defineBackground(() => {
   browser.commands.onCommand.addListener((command) => {
     if (command === "toggle-translation") {
       toggleCurrentSite();
+    }
+    if (command === "cycle-display-mode") {
+      cycleDisplayMode();
     }
   });
 });

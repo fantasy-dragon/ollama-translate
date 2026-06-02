@@ -1,9 +1,19 @@
+export type DisplayMode = "bilingual" | "translation-only" | "original-only";
+
+export const DISPLAY_MODES: readonly DisplayMode[] = [
+  "bilingual",
+  "translation-only",
+  "original-only",
+];
+
 export interface Settings {
   ollamaUrl: string;
   model: string;
   minTextLength: number;
   /** 白名单域名列表：仅翻译列表中的域名 */
   domainList: readonly string[];
+  /** 显示模式 */
+  displayMode: DisplayMode;
   /** CSS 选择器，用于匹配需要翻译的文本元素 */
   textSelector: string;
   /** 需要排除的标签名（逗号分隔） */
@@ -15,6 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   model: "qwen2.5:7b",
   minTextLength: 20,
   domainList: [],
+  displayMode: "bilingual",
   textSelector: "p, h1, h2, h3, h4, h5, h6, li, article div",
   excludedTags: "SCRIPT,STYLE,CODE,PRE,NAV,HEADER,FOOTER,BUTTON,INPUT",
 };

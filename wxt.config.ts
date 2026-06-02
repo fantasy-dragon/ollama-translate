@@ -18,6 +18,10 @@ export default defineConfig({
         suggested_key: { default: "Ctrl+Shift+T" },
         description: "切换当前站点翻译",
       },
+      "cycle-display-mode": {
+        suggested_key: { default: "Ctrl+Shift+Y" },
+        description: "循环切换显示模式（双语/仅译文/仅原文）",
+      },
     },
   },
   vite: () => ({
