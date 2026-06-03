@@ -2,7 +2,7 @@
   "name": "ollama-translate",
   "description": "基于本地 Ollama 的浏览器沉浸式双语翻译扩展",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
