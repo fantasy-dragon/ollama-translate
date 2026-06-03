@@ -145,6 +145,30 @@ export function AISettings() {
         )}
       </div>
 
+      {/* 翻译风格 */}
+      <div className="space-y-2">
+        <label
+          htmlFor="translation-style"
+          className="text-xs font-medium text-muted-foreground"
+        >
+          翻译风格
+        </label>
+        <select
+          id="translation-style"
+          value={settings?.translationStyle ?? "standard"}
+          onChange={(e) =>
+            settingsActions.updateSettings({ translationStyle: e.target.value })
+          }
+          className="w-full px-3 py-2 bg-secondary border-none rounded-lg text-xs hover:brightness-110 transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="standard">标准翻译</option>
+          <option value="academic">学术正式</option>
+          <option value="casual">口语自然</option>
+          <option value="technical">技术文档</option>
+          <option value="literary">文学优美</option>
+        </select>
+      </div>
+
       {/* 连接测试 */}
       <button
         type="button"

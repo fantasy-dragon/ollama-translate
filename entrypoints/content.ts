@@ -487,11 +487,12 @@ export default defineContentScript({
         const newSettings = changes.settings.newValue as Settings | undefined;
         const oldSettings = changes.settings.oldValue as Settings | undefined;
 
-        // 模型变更：清除旧译文，用新模型重新翻译
+        // 模型或翻译风格变更：清除旧译文，重新翻译
         if (
           newSettings &&
           oldSettings &&
-          newSettings.model !== oldSettings.model &&
+          (newSettings.model !== oldSettings.model ||
+            newSettings.translationStyle !== oldSettings.translationStyle) &&
           observer
         ) {
           currentSettings = newSettings;

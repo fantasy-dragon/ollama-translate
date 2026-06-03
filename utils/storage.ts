@@ -17,6 +17,8 @@ export interface Settings {
   textSelector: string;
   /** 需要排除的标签名（逗号分隔） */
   excludedTags: string;
+  /** 翻译风格 */
+  translationStyle: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   displayMode: "bilingual",
   textSelector: "p, h1, h2, h3, h4, h5, h6, li, article div",
   excludedTags: "SCRIPT,STYLE,CODE,PRE,NAV,HEADER,FOOTER,BUTTON,INPUT",
+  translationStyle: "standard",
 };
 
 const STORAGE_KEY = "settings";

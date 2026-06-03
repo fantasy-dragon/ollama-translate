@@ -96,6 +96,7 @@ function isDomainEnabled(settings: Settings, hostname: string): boolean {
 async function translateOne(
   text: string,
   model: string,
+  translationStyle: string,
   contextTexts?: string[],
 ): Promise<string> {
   const cached = filterCached([text], model);
@@ -104,7 +105,11 @@ async function translateOne(
   }
 
   try {
-    const prompt = buildTranslatePrompt(text, contextTexts);
+    const prompt = buildTranslatePrompt(
+      text,
+      contextTexts,
+      translationStyle as import("../utils/prompts").TranslationStyle,
+    );
     const data = await ollamaFetch<{ response: string }>("/api/generate", {
       model,
       prompt,
@@ -131,7 +136,9 @@ async function handleTranslate(texts: string[]): Promise<TranslateResponse> {
 
   // 整个 chunk 作为上下文传入，让每个翻译调用能参考相邻文本
   const translations = await Promise.all(
-    texts.map((text) => translateOne(text, settings.model, texts)),
+    texts.map((text) =>
+      translateOne(text, settings.model, settings.translationStyle, texts),
+    ),
   );
 
   sendStatus("idle", Date.now() - startTime);
