@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSnapshot } from "valtio";
 import { settingsStore, settingsActions } from "../store/settings-store";
 import {
@@ -16,12 +16,7 @@ export function AISettings() {
   const [models, setModels] = useState<string[]>([]);
   const [showCustomInput, setShowCustomInput] = useState(false);
 
-  // 弹出层打开时自动获取已安装模型
-  useEffect(() => {
-    fetchModels();
-  }, [settings?.ollamaUrl]);
-
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     if (!settings?.ollamaUrl) return;
     try {
       const result = await sendExtensionMessage(
@@ -34,7 +29,12 @@ export function AISettings() {
     } catch {
       // 静默失败，用户可手动点测试连接
     }
-  };
+  }, [settings?.ollamaUrl]);
+
+  // 弹出层打开 / ollamaUrl 变更时自动获取已安装模型
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
 
   const handleTestConnection = async () => {
     setTesting(true);
